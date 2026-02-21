@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
+import 'package:ai_heracle_fit/page/diet_planning/diet_planning_screen.dart';
 
 class AiCardsSection extends StatelessWidget {
   const AiCardsSection({super.key});
@@ -29,13 +30,24 @@ class AiCardsSection extends StatelessWidget {
               flex: 4,
               child: Column(
                 children: [
-                  _buildProfessionalSmallCard(
-                    title: 'Diet Planning',
-                    subtitle: 'Keto-Focused Plan',
-                    icon: Icons.restaurant_rounded,
-                    iconBg: const Color(0xFFE8F5E9),
-                    iconColor: const Color(0xFF2E7D32),
-                    tag: 'AI Plan',
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const DietPlanningScreen(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(26),
+                    child: _buildProfessionalSmallCard(
+                      title: 'Diet Planning',
+                      subtitle: 'Keto-Focused Plan',
+                      icon: Icons.restaurant_rounded,
+                      iconBg: const Color(0xFFE8F5E9),
+                      iconColor: const Color(0xFF2E7D32),
+                      tag: 'AI Plan',
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _buildProfessionalSmallCard(
