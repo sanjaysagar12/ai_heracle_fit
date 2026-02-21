@@ -47,7 +47,7 @@ class HeaderWidget extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Sanjay', // Simplified name for cleaner header
+                    'Sanjana S', // Simplified name for cleaner header
                     style: HeracleTheme.lightTheme.textTheme.titleLarge
                         ?.copyWith(
                           fontWeight: FontWeight.w900,

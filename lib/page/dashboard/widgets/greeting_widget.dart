@@ -50,10 +50,10 @@ class _GreetingWidgetState extends State<GreetingWidget> {
         RichText(
           text: TextSpan(
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 21,
               color: HeracleTheme.textBlack,
               fontWeight: FontWeight.w400, // Entire text is now semi-bold/bold
-              height: 1.3,
+              height: 1.4,
               letterSpacing: -0.5,
             ),
             children: [TextSpan(text: _currentText)],

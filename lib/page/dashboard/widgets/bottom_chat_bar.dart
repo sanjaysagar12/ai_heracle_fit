@@ -43,7 +43,7 @@ class BottomChatBar extends StatelessWidget {
                 focusNode: focusNode,
                 textAlignVertical: TextAlignVertical.center,
                 decoration: const InputDecoration(
-                  hintText: 'Write a message...',
+                  hintText: 'Chat with Heracle AI...',
                   hintStyle: TextStyle(
                     color: HeracleTheme.textGrey,
                     fontSize: 15,
