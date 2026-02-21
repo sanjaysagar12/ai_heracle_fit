@@ -21,8 +21,8 @@ class AiCardsSection extends StatelessWidget {
                 highlight: 'Biceps & Back',
                 subtext: 'Optimal for hypertrophy',
                 icon: Icons.fitness_center_rounded,
-                primaryColor: const Color(0xFF1A1F2C), // Sleek Charcoal Navy
-                accentColor: const Color(0xFF7B61FF), // Glowing Indigo
+                primaryColor: const Color(0xFF000000), 
+                accentColor: const Color(0xFFBAE014), 
               ),
             ),
             const SizedBox(width: 16),
@@ -133,7 +133,7 @@ class AiCardsSection extends StatelessWidget {
             ),
             // Content
             Padding(
-              padding: const EdgeInsets.all(22), // Slightly reduced padding
+              padding: const EdgeInsets.all(25), // Slightly reduced padding
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -280,7 +280,7 @@ class AiCardsSection extends StatelessWidget {
                             Text(
                               'View more',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Colors.black,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -288,8 +288,8 @@ class AiCardsSection extends StatelessWidget {
                             SizedBox(width: 6),
                             Icon(
                               Icons.arrow_forward_rounded,
-                              color: Colors.white,
-                              size: 16,
+                              color: Colors.black,
+                              size: 17,
                             ),
                           ],
                         ),
@@ -594,7 +594,7 @@ class _ProgressCardState extends State<ProgressCard> {
                         decoration: BoxDecoration(
                           color: _currentPage == index
                               ? (isMusclePage
-                                  ? const Color(0xFF7B61FF)
+                                  ? const Color(0xFFB4D917)
                                   : Colors.orange)
                               : Colors.black.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(3),
@@ -663,7 +663,7 @@ class _ProgressCardState extends State<ProgressCard> {
         ? [0.3, 0.45, 0.38, 0.6, 0.72, 0.65, 0.85]
         : [0.6, 0.75, 0.8, 0.7, 0.9, 0.85, 0.95];
 
-    final color = isMusclePage ? const Color(0xFF7B61FF) : Colors.orange;
+    final color = isMusclePage ? Color(0xFFB4D917) : Colors.orange;
 
     return Column(
       children: [
