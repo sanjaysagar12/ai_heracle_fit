@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
 import 'package:ai_heracle_fit/page/diet_planning/diet_planning_screen.dart';
+import 'package:ai_heracle_fit/page/sleep_coach/sleep_coach_screen.dart';
 
 class AiCardsSection extends StatelessWidget {
   const AiCardsSection({super.key});
@@ -50,13 +51,24 @@ class AiCardsSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildProfessionalSmallCard(
-                    title: 'Sleep Coach',
-                    subtitle: 'Circadian Rhythm',
-                    icon: Icons.bedtime_rounded,
-                    iconBg: const Color(0xFFFFF3E0),
-                    iconColor: const Color(0xFFE65100),
-                    tag: '8h 12m',
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SleepCoachScreen(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(26),
+                    child: _buildProfessionalSmallCard(
+                      title: 'Sleep Coach',
+                      subtitle: 'Circadian Rhythm',
+                      icon: Icons.bedtime_rounded,
+                      iconBg: const Color(0xFFFFF3E0),
+                      iconColor: const Color(0xFFE65100),
+                      tag: '8h 12m',
+                    ),
                   ),
                 ],
               ),
