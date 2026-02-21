@@ -33,14 +33,16 @@ class AiCardsSection extends StatelessWidget {
                 icon: Icons.restaurant_rounded,
                 iconBg: const Color(0xFFE8F5E9),
                 iconColor: const Color(0xFF2E7D32),
+                tag: 'AI Plan',
               ),
               const SizedBox(height: 16),
               _buildProfessionalSmallCard(
-                title: 'Sleep Fixer',
+                title: 'Sleep Coach',
                 subtitle: 'Circadian Rhythm',
                 icon: Icons.bedtime_rounded,
                 iconBg: const Color(0xFFFFF3E0),
                 iconColor: const Color(0xFFE65100),
+                tag: '8h 12m',
               ),
             ],
           ),
@@ -305,69 +307,116 @@ class AiCardsSection extends StatelessWidget {
     required IconData icon,
     required Color iconBg,
     required Color iconColor,
+    String? tag,
   }) {
     return Container(
-      height:
-          142, // Reduced from 152 to match the new hero card height (142*2 + 16 = 300)
-      padding: const EdgeInsets.all(20),
+      height: 142,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
         border: Border.all(color: Colors.black.withOpacity(0.04), width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(14),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: Stack(
+          children: [
+            // Decorative Background Icon
+            Positioned(
+              right: -15,
+              bottom: -15,
+              child: Icon(icon, size: 100, color: iconColor.withOpacity(0.05)),
             ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const Spacer(),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: HeracleTheme.textBlack,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: HeracleTheme.textGrey,
-                    fontWeight: FontWeight.w500,
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: iconBg,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: iconColor.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(icon, color: iconColor, size: 20),
+                      ),
+                      if (tag != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: iconBg.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            tag,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: iconColor,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
+                  const Spacer(),
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: HeracleTheme.textBlack,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: HeracleTheme.textGrey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 16,
+                        color: Colors.black.withOpacity(0.2),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 16,
-                color: Colors.black.withOpacity(0.2),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
