@@ -11,7 +11,7 @@ class GreetingWidget extends StatefulWidget {
 
 class _GreetingWidgetState extends State<GreetingWidget> {
   static const String _fullText =
-      'Good morning! Your circadian rhythm is as wonderful as your soul, guiding you through the day with energy and purpose...';
+      'Good morning! Your circadian rhythm is as wonderful as your soul, guiding you through the day with purpose...';
 
   String _currentText = '';
   Timer? _timer;

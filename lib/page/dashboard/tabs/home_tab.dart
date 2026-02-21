@@ -22,17 +22,22 @@ class HomeTab extends StatelessWidget {
             child: HeaderWidget(),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(
+            padding: const EdgeInsets.fromLTRB(
               20,
               12, // Reduced top padding
               20,
-              12, // Reduced bottom padding
+              0, // Set to 0 to use SizedBox for explicit spacing
             ),
             child: GreetingWidget(),
           ),
+          const SizedBox(
+            height: 20,
+          ), // Added space between GreetingWidget and AiCardsSection
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Column(children: [AiCardsSection(), SizedBox(height: 32)]),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [AiCardsSection(), const SizedBox(height: 32)],
+            ),
           ),
         ],
       ),

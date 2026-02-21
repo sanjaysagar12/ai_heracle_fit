@@ -224,7 +224,7 @@ class AiCardsSection extends StatelessWidget {
                   InkWell(
                     onTap: () {},
                     child: Container(
-                      height: 42, // Reduced from 46
+                      height: 50, // Reduced from 46
                       width: double.infinity,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
