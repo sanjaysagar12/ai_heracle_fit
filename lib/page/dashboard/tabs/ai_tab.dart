@@ -27,7 +27,7 @@ class AiTab extends StatelessWidget {
                         width: 7,
                         height: 7,
                         decoration: const BoxDecoration(
-                          color: HeracleTheme.givingliGreenDark,
+                          color: Color(0xFF94B600),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -99,7 +99,7 @@ class AiTab extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         constraints: const BoxConstraints(maxWidth: 300),
         decoration: BoxDecoration(
-          color: isAi ? Colors.white : const Color(0xFF1D1B20),
+          color: isAi ? Colors.white : const Color(0xFF94B600),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
