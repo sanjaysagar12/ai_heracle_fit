@@ -104,9 +104,21 @@ class _AiTabState extends State<AiTab> {
                   return _buildUserMessage(msg);
                 } else if (msg is AiResponse) {
                   if (msg.type == AiResponseType.workout && msg.data != null) {
-                    return WorkoutSessionWidget(
-                      session: msg.data!,
-                      onViewSession: () => widget.onViewWorkout(msg.data!),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildAiMessage(msg.message),
+                        ...msg.data!.map(
+                          (session) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: WorkoutSessionWidget(
+                              session: session,
+                              onViewSession: () =>
+                                  widget.onViewWorkout(session),
+                            ),
+                          ),
+                        ),
+                      ],
                     );
                   }
                   return _buildAiMessage(msg.message);

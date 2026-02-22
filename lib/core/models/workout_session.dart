@@ -21,16 +21,25 @@ class WorkoutSession {
 
   factory WorkoutSession.fromJson(Map<String, dynamic> json) {
     return WorkoutSession(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      content: json['content'] as String?,
-      category: json['category'] as String?,
-      exercisesCount: json['exercisesCount'] as int,
-      position: json['position'] as int?,
-      exercises: (json['exercises'] as List)
-          .map((e) => Exercise.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      id:
+          json['id']?.toString() ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      title: json['title']?.toString() ?? 'Workout Session',
+      content: json['content']?.toString(),
+      category: json['category']?.toString(),
+      exercisesCount:
+          int.tryParse(json['exercisesCount']?.toString() ?? '0') ??
+          (json['exercises'] as List?)?.length ??
+          0,
+      position: int.tryParse(json['position']?.toString() ?? '0'),
+      exercises: json['exercises'] != null
+          ? (json['exercises'] as List)
+                .map((e) => Exercise.fromJson(e as Map<String, dynamic>))
+                .toList()
+          : [],
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
     );
   }
 }
@@ -52,13 +61,17 @@ class Exercise {
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
     return Exercise(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      desc: json['desc'] as String?,
-      image: json['image'] as String?,
-      sets: (json['sets'] as List)
-          .map((e) => ExerciseSet.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      id:
+          json['id']?.toString() ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      name: json['name']?.toString() ?? 'Unknown Exercise',
+      desc: json['desc']?.toString(),
+      image: json['image']?.toString(),
+      sets: json['sets'] != null
+          ? (json['sets'] as List)
+                .map((e) => ExerciseSet.fromJson(e as Map<String, dynamic>))
+                .toList()
+          : [],
     );
   }
 }
@@ -71,8 +84,8 @@ class ExerciseSet {
 
   factory ExerciseSet.fromJson(Map<String, dynamic> json) {
     return ExerciseSet(
-      kg: (json['kg'] as num).toDouble(),
-      reps: json['reps'] as int,
+      kg: double.tryParse(json['kg']?.toString() ?? '0') ?? 0.0,
+      reps: int.tryParse(json['reps']?.toString() ?? '0') ?? 0,
     );
   }
 }

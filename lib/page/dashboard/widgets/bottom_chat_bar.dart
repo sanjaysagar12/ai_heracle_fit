@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
-import 'package:ai_heracle_fit/page/dashboard/widgets/ai_hover_suggestion.dart';
 
 class BottomChatBar extends StatelessWidget {
   final FocusNode? focusNode;

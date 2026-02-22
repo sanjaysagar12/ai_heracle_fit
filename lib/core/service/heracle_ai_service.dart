@@ -4,7 +4,7 @@ import 'package:ai_heracle_fit/core/models/ai_response.dart';
 class HeracleAiService {
   final HeracleAiApi _aiApi = HeracleAiApi();
 
-  Future<AiResponse> sendMessage(String message) async {
+  Future<List<AiResponse>> sendMessage(String message) async {
     return await _aiApi.sendMessage(message);
   }
 

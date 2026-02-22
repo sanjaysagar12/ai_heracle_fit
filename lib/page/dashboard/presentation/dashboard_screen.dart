@@ -72,16 +72,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _messages.add(text);
       _chatController.clear();
       _isLoading = true;
+      _selectedSession = null; // Return to chat view
       if (_selectedIndex != 1) {
         _selectedIndex = 1;
       }
     });
 
     try {
-      final response = await _aiRepository.sendMessage(text);
+      final responses = await _aiRepository.sendMessage(text);
       if (mounted) {
         setState(() {
-          _messages.add(response);
+          _messages.addAll(responses);
         });
       }
     } catch (e) {

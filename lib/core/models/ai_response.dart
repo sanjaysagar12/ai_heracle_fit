@@ -6,7 +6,7 @@ class AiResponse {
   final AiResponseType type;
   final String? widget;
   final String message;
-  final WorkoutSession? data;
+  final List<WorkoutSession>? data;
 
   AiResponse({
     required this.type,
@@ -22,7 +22,13 @@ class AiResponse {
           : AiResponseType.reply,
       widget: json['widget'] as String?,
       message: json['message'] as String? ?? '',
-      data: json['data'] != null ? WorkoutSession.fromJson(json['data']) : null,
+      data: json['data'] != null
+          ? (json['data'] is List
+                ? (json['data'] as List)
+                      .map((item) => WorkoutSession.fromJson(item))
+                      .toList()
+                : [WorkoutSession.fromJson(json['data'])])
+          : null,
     );
   }
 }

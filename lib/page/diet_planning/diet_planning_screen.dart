@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
 import 'package:ai_heracle_fit/page/diet_planning/diet_plan_model.dart';
+import 'package:ai_heracle_fit/page/diet_planning/food_analysis_screen.dart';
 
 class DietPlanningScreen extends StatelessWidget {
   const DietPlanningScreen({super.key});
@@ -33,7 +34,10 @@ class DietPlanningScreen extends StatelessWidget {
                 _buildHeader(context),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 5,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -53,11 +57,13 @@ class DietPlanningScreen extends StatelessWidget {
                           'Based on your previous diet history and muscle recovery needs.',
                           style: TextStyle(
                             fontSize: 14,
-                            color: HeracleTheme.textGrey.withOpacity(0.8),
+                            color: HeracleTheme.textGrey.withValues(alpha: 0.8),
                           ),
                         ),
                         const SizedBox(height: 24),
-                        ...mockDietPlans.map((plan) => _buildDietPlanCard(plan)),
+                        ...mockDietPlans.map(
+                          (plan) => _buildDietPlanCard(plan),
+                        ),
                       ],
                     ),
                   ),
@@ -91,10 +97,31 @@ class DietPlanningScreen extends StatelessWidget {
             ),
           ),
           const Spacer(),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const FoodAnalysisScreen(),
+              ),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: HeracleTheme.bgBlue.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                color: HeracleTheme.primaryPurple,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: HeracleTheme.givingliGreen.withOpacity(0.5),
+              color: HeracleTheme.givingliGreen.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -116,7 +143,7 @@ class DietPlanningScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -130,7 +157,7 @@ class DietPlanningScreen extends StatelessWidget {
             child: Icon(
               Icons.auto_awesome_rounded,
               size: 120,
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
             ),
           ),
           Padding(
@@ -146,10 +173,14 @@ class DietPlanningScreen extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: HeracleTheme.givingliGreenDark.withOpacity(0.2),
+                        color: HeracleTheme.givingliGreenDark.withValues(
+                          alpha: 0.2,
+                        ),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: HeracleTheme.givingliGreenDark.withOpacity(0.3),
+                          color: HeracleTheme.givingliGreenDark.withValues(
+                            alpha: 0.3,
+                          ),
                         ),
                       ),
                       child: const Row(
@@ -221,7 +252,7 @@ class DietPlanningScreen extends StatelessWidget {
             Text(
               unit,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -231,7 +262,7 @@ class DietPlanningScreen extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             fontSize: 12,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
@@ -247,10 +278,10 @@ class DietPlanningScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -271,7 +302,7 @@ class DietPlanningScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: plan.color.withOpacity(0.1),
+                        color: plan.color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Icon(plan.icon, color: plan.color, size: 24),
@@ -324,7 +355,7 @@ class DietPlanningScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: HeracleTheme.textBlack.withOpacity(0.03),
+        color: HeracleTheme.textBlack.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
