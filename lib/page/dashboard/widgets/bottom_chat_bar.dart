@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
+import 'package:ai_heracle_fit/page/dashboard/widgets/ai_hover_suggestion.dart';
 
 class BottomChatBar extends StatelessWidget {
   final FocusNode? focusNode;
@@ -51,10 +52,10 @@ class BottomChatBar extends StatelessWidget {
                 ],
               ),
               child: TextField(
+                controller: controller, // Restored
                 focusNode: focusNode,
-                controller: controller,
                 textAlignVertical: TextAlignVertical.center,
-                onSubmitted: (_) => onSend?.call(),
+                onSubmitted: (_) => onSend?.call(), // Restored
                 decoration: const InputDecoration(
                   hintText: 'Chat with Heracle AI...',
                   hintStyle: TextStyle(
@@ -71,6 +72,7 @@ class BottomChatBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           GestureDetector(
+            // Added back for interactivity
             onTap: isLoading ? null : onSend,
             child: Container(
               height: 60,
@@ -86,7 +88,8 @@ class BottomChatBar extends StatelessWidget {
                   ),
                 ],
               ),
-              child: isLoading
+              child:
+                  isLoading // Restored loading indicator
                   ? const Padding(
                       padding: EdgeInsets.all(18.0),
                       child: CircularProgressIndicator(

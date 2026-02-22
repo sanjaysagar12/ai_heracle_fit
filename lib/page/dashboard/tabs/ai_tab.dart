@@ -61,7 +61,7 @@ class _AiTabState extends State<AiTab> {
                       width: 7,
                       height: 7,
                       decoration: const BoxDecoration(
-                        color: HeracleTheme.givingliGreenDark,
+                        color: Color(0xFF94B600), // Team's improved green
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -148,7 +148,7 @@ class _AiTabState extends State<AiTab> {
         padding: const EdgeInsets.all(12),
         constraints: const BoxConstraints(maxWidth: 280),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F7),
+          color: const Color(0xFF94B600), // Team's improved green
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
