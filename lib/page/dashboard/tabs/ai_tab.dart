@@ -1,125 +1,159 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
+import 'package:ai_heracle_fit/core/models/ai_response.dart';
+import 'package:ai_heracle_fit/page/dashboard/widgets/workout_session_widget.dart';
+import 'package:ai_heracle_fit/core/models/workout_session.dart';
 
-class AiTab extends StatelessWidget {
+class AiTab extends StatefulWidget {
+  final List<Object> messages;
   final VoidCallback onClose;
+  final Function(WorkoutSession) onViewWorkout;
 
-  const AiTab({super.key, required this.onClose});
+  const AiTab({
+    super.key,
+    required this.messages,
+    required this.onClose,
+    required this.onViewWorkout,
+  });
+
+  @override
+  State<AiTab> createState() => _AiTabState();
+}
+
+class _AiTabState extends State<AiTab> {
+  final ScrollController _scrollController = ScrollController();
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(AiTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.messages.length > oldWidget.messages.length) {
+      _scrollToBottom();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white, // Solid background for slide-up
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Minimalist Top-of-Page Chat Header
-            Padding(
-              padding: const EdgeInsets.only(top: 4, bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
-                          color: HeracleTheme.givingliGreenDark,
-                          shape: BoxShape.circle,
-                        ),
+      color: Colors.white, // App theme background
+      child: Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: HeracleTheme.givingliGreenDark,
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'HERACLE AI',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          color: HeracleTheme.textBlack,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  TextButton.icon(
-                    onPressed: onClose,
-                    style: TextButton.styleFrom(
-                      foregroundColor: HeracleTheme.textGrey,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
-                    icon: const Icon(Icons.close_rounded, size: 18),
-                    label: const Text(
-                      'Close',
+                    const SizedBox(width: 10),
+                    const Text(
+                      'HERACLE AI',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: HeracleTheme.textBlack,
+                        letterSpacing: 1.5,
                       ),
                     ),
+                  ],
+                ),
+                TextButton.icon(
+                  onPressed: widget.onClose,
+                  style: TextButton.styleFrom(
+                    foregroundColor: HeracleTheme.textGrey,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                   ),
-                ],
-              ),
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  label: const Text(
+                    'Close',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
             ),
-            const Divider(height: 1, color: Color(0xFFF0F0F0)),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Column(
-                children: [
-                  _buildMessageBubble(
-                    'Hello! How can I help you today?',
-                    isAi: true,
-                  ),
-                  _buildMessageBubble(
-                    'I want to focus on my biceps today.',
-                    isAi: false,
-                  ),
-                  _buildMessageBubble(
-                    'Great! I\'ve updated your recommended muscle card. We\'ll focus on curls and pull-ups.',
-                    isAi: true,
-                  ),
-                  _buildMessageBubble(
-                    'I can also suggest a diet plan to complement this workout. Are you interested?',
-                    isAi: true,
-                  ),
-                ],
-              ),
+          ),
+          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              itemCount: widget.messages.length,
+              itemBuilder: (context, index) {
+                final msg = widget.messages[index];
+                if (msg is String) {
+                  return _buildUserMessage(msg);
+                } else if (msg is AiResponse) {
+                  if (msg.type == AiResponseType.workout && msg.data != null) {
+                    return WorkoutSessionWidget(
+                      session: msg.data!,
+                      onViewSession: () => widget.onViewWorkout(msg.data!),
+                    );
+                  }
+                  return _buildAiMessage(msg.message);
+                }
+                return const SizedBox.shrink();
+              },
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserMessage(String text) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(12),
+        constraints: const BoxConstraints(maxWidth: 280),
+        decoration: BoxDecoration(
+          color: HeracleTheme.textBlack,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
       ),
     );
   }
 
-  Widget _buildMessageBubble(String text, {required bool isAi}) {
+  Widget _buildAiMessage(String text) {
+    if (text.isEmpty) return const SizedBox.shrink();
     return Align(
-      alignment: isAi ? Alignment.centerLeft : Alignment.centerRight,
+      alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 24),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: const BoxConstraints(maxWidth: 300),
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(12),
+        constraints: const BoxConstraints(maxWidth: 280),
         decoration: BoxDecoration(
-          color: isAi ? Colors.white : const Color(0xFF1D1B20),
+          color: const Color(0xFFF5F5F7),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isAi ? 0.02 : 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-          border: isAi
-              ? Border.all(color: Colors.black.withOpacity(0.05), width: 1)
-              : null,
         ),
         child: Text(
           text,
-          style: TextStyle(
-            color: isAi ? HeracleTheme.textBlack : Colors.white,
-            fontSize: 15,
-            height: 1.5,
-            fontWeight: isAi ? FontWeight.w500 : FontWeight.w400,
-          ),
+          style: const TextStyle(color: HeracleTheme.textBlack, fontSize: 14),
         ),
       ),
     );

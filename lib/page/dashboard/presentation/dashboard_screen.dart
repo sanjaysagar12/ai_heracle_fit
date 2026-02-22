@@ -3,6 +3,10 @@ import 'package:ai_heracle_fit/core/theme.dart';
 import 'package:ai_heracle_fit/page/dashboard/widgets/bottom_chat_bar.dart';
 import 'package:ai_heracle_fit/page/dashboard/tabs/home_tab.dart';
 import 'package:ai_heracle_fit/page/dashboard/tabs/ai_tab.dart';
+import 'package:ai_heracle_fit/page/dashboard/repository/ai_repository.dart';
+import 'package:ai_heracle_fit/core/models/ai_response.dart';
+import 'package:ai_heracle_fit/core/models/workout_session.dart';
+import 'package:ai_heracle_fit/page/dashboard/tabs/exercise_detail_tab.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -14,6 +18,12 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   final FocusNode _chatFocusNode = FocusNode();
+  final TextEditingController _chatController = TextEditingController();
+  final AiRepository _aiRepository = AiRepository();
+
+  final List<Object> _messages = []; // Can be String (User) or AiResponse (AI)
+  bool _isLoading = false;
+  WorkoutSession? _selectedSession;
 
   @override
   void initState() {
@@ -25,21 +35,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     });
+
+    // Add initial AI message
+    _messages.add(
+      AiResponse(
+        type: AiResponseType.reply,
+        message: 'Hello! How can I help you today?',
+      ),
+    );
   }
 
   @override
   void dispose() {
     _chatFocusNode.dispose();
+    _chatController.dispose();
     super.dispose();
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      if (index == 0) {
+        _selectedSession = null;
+      }
     });
     if (index == 0) {
       _chatFocusNode.unfocus();
     }
+  }
+
+  Future<void> _handleSend() async {
+    final text = _chatController.text.trim();
+    if (text.isEmpty || _isLoading) return;
+
+    setState(() {
+      _messages.add(text);
+      _chatController.clear();
+      _isLoading = true;
+      if (_selectedIndex != 1) {
+        _selectedIndex = 1;
+      }
+    });
+
+    try {
+      final response = await _aiRepository.sendMessage(text);
+      if (mounted) {
+        setState(() {
+          _messages.add(response);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _onViewWorkout(WorkoutSession session) {
+    setState(() {
+      _selectedSession = session;
+    });
   }
 
   @override
@@ -94,10 +155,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   height: constraints.maxHeight,
                                   child: const HomeTab(),
                                 ),
-                                // Tab 2: AI Interface
+                                // Tab 2: AI Interface / Exercise Detail
                                 SizedBox(
                                   height: constraints.maxHeight,
-                                  child: AiTab(onClose: () => _onItemTapped(0)),
+                                  child: _selectedSession != null
+                                      ? ExerciseDetailTab(
+                                          session: _selectedSession!,
+                                          onBack: () => setState(
+                                            () => _selectedSession = null,
+                                          ),
+                                        )
+                                      : AiTab(
+                                          messages: _messages,
+                                          onClose: () => _onItemTapped(0),
+                                          onViewWorkout: _onViewWorkout,
+                                        ),
                                 ),
                               ],
                             ),
@@ -109,7 +181,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // Pinned Chat Bar
                   BottomChatBar(
                     focusNode: _chatFocusNode,
+                    controller: _chatController,
+                    onSend: _handleSend,
                     isActive: isChatVisible,
+                    isLoading: _isLoading,
                   ),
                 ],
               ),

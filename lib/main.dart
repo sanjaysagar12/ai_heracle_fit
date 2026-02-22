@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
-import 'package:ai_heracle_fit/page/dashboard/presentation/dashboard_screen.dart';
+import 'package:ai_heracle_fit/page/auth/presentation/login_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
@@ -15,7 +18,7 @@ class MyApp extends StatelessWidget {
       title: 'Heracle Fit',
       debugShowCheckedModeBanner: false,
       theme: HeracleTheme.lightTheme,
-      home: const DashboardScreen(),
+      home: const LoginScreen(),
     );
   }
 }
