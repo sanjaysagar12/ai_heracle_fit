@@ -42,8 +42,8 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
     try {
-      final credential = await _authService.signInWithGoogle();
-      if (credential != null && mounted) {
+      final jwt = await _authService.signInWithGoogle();
+      if (jwt != null && mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (_, __, ___) => const DashboardScreen(),
