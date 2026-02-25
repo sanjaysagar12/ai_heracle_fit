@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:ai_heracle_fit/core/models/workout_card_data.dart';
 import 'package:ai_heracle_fit/core/services/api_client.dart';
 
@@ -20,7 +21,8 @@ class WorkoutCardService {
       }
 
       if (response.statusCode == 200) {
-        final data = Map<String, dynamic>.from(response.data as Map);
+        final data = _toMap(response.data);
+        if (data == null) return WorkoutCardData.newUser;
         return WorkoutCardData.fromJson(data);
       }
 
@@ -30,5 +32,19 @@ class WorkoutCardService {
     }
 
     return WorkoutCardData.newUser;
+  }
+
+  /// Safely converts [raw] to a [Map<String, dynamic>].
+  /// Handles both pre-decoded Maps and raw JSON strings.
+  Map<String, dynamic>? _toMap(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    return null;
   }
 }

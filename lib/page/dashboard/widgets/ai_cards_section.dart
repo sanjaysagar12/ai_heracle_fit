@@ -3,6 +3,7 @@ import 'package:ai_heracle_fit/core/theme.dart';
 import 'package:ai_heracle_fit/core/models/workout_card_data.dart';
 import 'package:ai_heracle_fit/core/services/workout_card_service.dart';
 import 'package:ai_heracle_fit/page/diet_planning/diet_planning_screen.dart';
+import 'package:ai_heracle_fit/page/set_goal/set_goal_screen.dart';
 import 'package:ai_heracle_fit/page/sleep_coach/sleep_coach_screen.dart';
 
 class AiCardsSection extends StatefulWidget {
@@ -32,6 +33,19 @@ class _AiCardsSectionState extends State<AiCardsSection> {
     }
   }
 
+  Future<void> _openSetGoal(BuildContext context) async {
+    final result = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const SetGoalScreen()));
+    // If user completed setup, refresh the card
+    if (result == true) {
+      setState(() {
+        _loading = true;
+      });
+      _loadCard();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -55,6 +69,9 @@ class _AiCardsSectionState extends State<AiCardsSection> {
                       buttonLabel: _cardData.buttonLabel,
                       duration: _cardData.chipDuration,
                       intensity: _cardData.chipIntensity,
+                      onButtonTap: _cardData.isNewUser
+                          ? () => _openSetGoal(context)
+                          : () {},
                     ),
             ),
             const SizedBox(width: 16),
@@ -133,6 +150,7 @@ class _AiCardsSectionState extends State<AiCardsSection> {
     String buttonLabel = 'View more',
     String? duration,
     String? intensity,
+    VoidCallback? onButtonTap,
   }) {
     return Container(
       height: 300, // Reduced from 320 to prevent overflow
@@ -304,7 +322,7 @@ class _AiCardsSectionState extends State<AiCardsSection> {
                     const SizedBox(height: 10),
                   ],
                   InkWell(
-                    onTap: () {},
+                    onTap: onButtonTap,
                     child: Container(
                       height: 50, // Reduced from 46
                       width: double.infinity,
