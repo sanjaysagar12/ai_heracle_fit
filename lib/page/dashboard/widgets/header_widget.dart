@@ -1,14 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
+import 'package:ai_heracle_fit/core/models/user_profile.dart';
+import 'package:ai_heracle_fit/core/services/user_service.dart';
 
-class HeaderWidget extends StatelessWidget {
+class HeaderWidget extends StatefulWidget {
   const HeaderWidget({super.key});
+
+  @override
+  State<HeaderWidget> createState() => _HeaderWidgetState();
+}
+
+class _HeaderWidgetState extends State<HeaderWidget> {
+  UserProfile? _profile;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await UserService.instance.fetchProfile();
+    if (mounted) {
+      setState(() {
+        _profile = profile;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Premium User Avatar
+        // ── Avatar ──────────────────────────────────────────────────────────
         Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
@@ -29,16 +55,33 @@ class HeaderWidget extends StatelessWidget {
               ),
             ],
           ),
-          child: const CircleAvatar(
-            radius: 26,
-            backgroundColor: Color(0xFFE8E4FD),
-            backgroundImage: NetworkImage(
-              'https://api.dicebear.com/7.x/avataaars/png?seed=Felix&backgroundColor=b6e3f4,c0aede,d1d4f9',
-            ),
-          ),
+          child: _loading
+              ? const _SkeletonCircle(radius: 26)
+              : CircleAvatar(
+                  radius: 26,
+                  backgroundColor: const Color(0xFFE8E4FD),
+                  backgroundImage: (_profile?.avatarUrl?.isNotEmpty == true)
+                      ? NetworkImage(_profile!.avatarUrl!)
+                      : null,
+                  child:
+                      (_profile?.avatarUrl == null ||
+                          _profile!.avatarUrl!.isEmpty)
+                      ? Text(
+                          _profile?.name.isNotEmpty == true
+                              ? _profile!.name[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            color: HeracleTheme.primaryPurple,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        )
+                      : null,
+                ),
         ),
         const SizedBox(width: 16),
-        // User Info & HERACLE branding
+
+        // ── Name + HERACLE tag + subtitle ───────────────────────────────────
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,15 +89,20 @@ class HeaderWidget extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Sanjana S', // Simplified name for cleaner header
-                    style: HeracleTheme.lightTheme.textTheme.titleLarge
-                        ?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 22,
-                          letterSpacing: -1,
+                  _loading
+                      ? const _SkeletonBox(width: 120, height: 18)
+                      : Flexible(
+                          child: Text(
+                            _toTitleCase(_profile?.name ?? ''),
+                            overflow: TextOverflow.ellipsis,
+                            style: HeracleTheme.lightTheme.textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 22,
+                                  letterSpacing: -1,
+                                ),
+                          ),
                         ),
-                  ),
                   const SizedBox(width: 8),
                   // HERACLE Branding Tag
                   Container(
@@ -79,18 +127,21 @@ class HeaderWidget extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 2),
-              const Text(
-                'Athlete • Pro Member',
-                style: TextStyle(
-                  color: HeracleTheme.textGrey,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              _loading
+                  ? const _SkeletonBox(width: 140, height: 12)
+                  : Text(
+                      _profile?.subtitle ?? '',
+                      style: const TextStyle(
+                        color: HeracleTheme.textGrey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ],
           ),
         ),
-        // Notification bell
+
+        // ── Notification bell ───────────────────────────────────────────────
         Container(
           width: 52,
           height: 52,
@@ -135,4 +186,41 @@ class HeaderWidget extends StatelessWidget {
       ],
     );
   }
+
+  /// Converts "SANJAY SAGAR" → "Sanjay Sagar"
+  String _toTitleCase(String text) => text
+      .split(' ')
+      .map(
+        (w) => w.isEmpty
+            ? ''
+            : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}',
+      )
+      .join(' ');
+}
+
+// ── Skeleton placeholders ─────────────────────────────────────────────────────
+
+class _SkeletonBox extends StatelessWidget {
+  final double width;
+  final double height;
+  const _SkeletonBox({required this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      color: Colors.black12,
+      borderRadius: BorderRadius.circular(6),
+    ),
+  );
+}
+
+class _SkeletonCircle extends StatelessWidget {
+  final double radius;
+  const _SkeletonCircle({required this.radius});
+
+  @override
+  Widget build(BuildContext context) =>
+      CircleAvatar(radius: radius, backgroundColor: Colors.black12);
 }
