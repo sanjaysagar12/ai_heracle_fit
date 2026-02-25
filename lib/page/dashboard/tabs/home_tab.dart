@@ -13,31 +13,17 @@ class HomeTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              8, // Reduced top padding
-              20,
-              0,
-            ),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: HeaderWidget(),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              20,
-              12, // Reduced top padding
-              20,
-              0, // Set to 0 to use SizedBox for explicit spacing
-            ),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
             child: GreetingWidget(),
           ),
-          const SizedBox(
-            height: 20,
-          ), // Added space between GreetingWidget and AiCardsSection
+          SizedBox(height: 20),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [AiCardsSection(), const SizedBox(height: 32)],
-            ),
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Column(children: [AiCardsSection(), SizedBox(height: 32)]),
           ),
         ],
       ),

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "833207457905",
+    "project_id": "heracle-ai",
+    "storage_bucket": "heracle-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:833207457905:android:28965d9fb83f18ef5fe3d0",
+        "android_client_info": {
+          "package_name": "ai.heracle.fit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "833207457905-v3ngicq8668g05c9vqeh42akrb2ur32j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASUhQfgG4jWdLijiPAwZqeX8NsifmZ58w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "833207457905-v3ngicq8668g05c9vqeh42akrb2ur32j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
