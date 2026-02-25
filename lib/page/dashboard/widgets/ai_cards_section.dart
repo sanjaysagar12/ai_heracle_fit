@@ -1,10 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
+import 'package:ai_heracle_fit/core/models/workout_card_data.dart';
+import 'package:ai_heracle_fit/core/services/workout_card_service.dart';
 import 'package:ai_heracle_fit/page/diet_planning/diet_planning_screen.dart';
 import 'package:ai_heracle_fit/page/sleep_coach/sleep_coach_screen.dart';
 
-class AiCardsSection extends StatelessWidget {
+class AiCardsSection extends StatefulWidget {
   const AiCardsSection({super.key});
+
+  @override
+  State<AiCardsSection> createState() => _AiCardsSectionState();
+}
+
+class _AiCardsSectionState extends State<AiCardsSection> {
+  WorkoutCardData _cardData = WorkoutCardData.newUser;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCard();
+  }
+
+  Future<void> _loadCard() async {
+    final data = await WorkoutCardService.instance.fetchTodayCard();
+    if (mounted) {
+      setState(() {
+        _cardData = data;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,17 +39,23 @@ class AiCardsSection extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hero Card: Suggested Muscle (Deep Professional Indigo)
             Expanded(
               flex: 5,
-              child: _buildProfessionalHeroCard(
-                title: 'Suggested\nMuscle',
-                highlight: 'Biceps & Back',
-                subtext: 'Optimal for hypertrophy',
-                icon: Icons.fitness_center_rounded,
-                primaryColor: const Color(0xFF000000), 
-                accentColor: const Color(0xFFBAE014), 
-              ),
+              child: _loading
+                  ? _buildSkeletonHeroCard()
+                  : _buildProfessionalHeroCard(
+                      title: _cardData.title,
+                      highlight: _cardData.highlight,
+                      subtext: _cardData.subtext,
+                      icon: _cardData.isNewUser
+                          ? Icons.flag_rounded
+                          : Icons.fitness_center_rounded,
+                      primaryColor: const Color(0xFF000000),
+                      accentColor: const Color(0xFFBAE014),
+                      buttonLabel: _cardData.buttonLabel,
+                      duration: _cardData.chipDuration,
+                      intensity: _cardData.chipIntensity,
+                    ),
             ),
             const SizedBox(width: 16),
             // Side Modules: Diet and Sleep (Sleek Professional White)
@@ -81,6 +113,16 @@ class AiCardsSection extends StatelessWidget {
     );
   }
 
+  Widget _buildSkeletonHeroCard() {
+    return Container(
+      height: 300,
+      decoration: BoxDecoration(
+        color: Colors.black12,
+        borderRadius: BorderRadius.circular(28),
+      ),
+    );
+  }
+
   Widget _buildProfessionalHeroCard({
     required String title,
     required String highlight,
@@ -88,6 +130,9 @@ class AiCardsSection extends StatelessWidget {
     required IconData icon,
     required Color primaryColor,
     required Color accentColor,
+    String buttonLabel = 'View more',
+    String? duration,
+    String? intensity,
   }) {
     return Container(
       height: 300, // Reduced from 320 to prevent overflow
@@ -239,20 +284,25 @@ class AiCardsSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10), // Reduced from 12
-                  // Metadata Chips
-                  Row(
-                    children: [
-                      _buildMiniChip(Icons.timer_outlined, '45M', accentColor),
-                      const SizedBox(width: 8),
-                      _buildMiniChip(
-                        Icons.flash_on_rounded,
-                        'High',
-                        accentColor,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10), // Reduced from 12
-                  // Action Button
+                  // Metadata Chips — only when we have real data
+                  if (duration != null && intensity != null) ...[
+                    Row(
+                      children: [
+                        _buildMiniChip(
+                          Icons.timer_outlined,
+                          duration,
+                          accentColor,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildMiniChip(
+                          Icons.flash_on_rounded,
+                          intensity,
+                          accentColor,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   InkWell(
                     onTap: () {},
                     child: Container(
@@ -273,20 +323,20 @@ class AiCardsSection extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'View more',
-                              style: TextStyle(
+                              buttonLabel,
+                              style: const TextStyle(
                                 color: Colors.black,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            SizedBox(width: 6),
-                            Icon(
+                            const SizedBox(width: 6),
+                            const Icon(
                               Icons.arrow_forward_rounded,
                               color: Colors.black,
                               size: 17,
@@ -474,17 +524,12 @@ class _ProgressCardState extends State<ProgressCard> {
     'Core',
   ];
 
-  final List<String> _dietMetrics = [
-    'Calories',
-    'Protein',
-    'Carbs',
-    'Fats',
-  ];
+  final List<String> _dietMetrics = ['Calories', 'Protein', 'Carbs', 'Fats'];
 
   @override
   Widget build(BuildContext context) {
     bool isMusclePage = _currentPage == 0;
-    
+
     return Container(
       width: double.infinity,
       height: 280,
@@ -515,9 +560,7 @@ class _ProgressCardState extends State<ProgressCard> {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      (isMusclePage
-                              ? const Color(0xFF7B61FF)
-                              : Colors.orange)
+                      (isMusclePage ? const Color(0xFF7B61FF) : Colors.orange)
                           .withOpacity(0.1),
                       Colors.transparent,
                     ],
@@ -538,9 +581,7 @@ class _ProgressCardState extends State<ProgressCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isMusclePage
-                                ? 'Muscle Progress'
-                                : 'Diet Progress',
+                            isMusclePage ? 'Muscle Progress' : 'Diet Progress',
                             style: const TextStyle(
                               color: HeracleTheme.textBlack,
                               fontSize: 18,
@@ -594,8 +635,8 @@ class _ProgressCardState extends State<ProgressCard> {
                         decoration: BoxDecoration(
                           color: _currentPage == index
                               ? (isMusclePage
-                                  ? const Color(0xFFB4D917)
-                                  : Colors.orange)
+                                    ? const Color(0xFFB4D917)
+                                    : Colors.orange)
                               : Colors.black.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(3),
                         ),
@@ -647,11 +688,12 @@ class _ProgressCardState extends State<ProgressCard> {
           },
           items: (isMusclePage ? _muscles : _dietMetrics)
               .map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              })
+              .toList(),
         ),
       ),
     );
@@ -683,14 +725,16 @@ class _ProgressCardState extends State<ProgressCard> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-              .map((day) => Text(
-                    day,
-                    style: const TextStyle(
-                      color: HeracleTheme.textGrey,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ))
+              .map(
+                (day) => Text(
+                  day,
+                  style: const TextStyle(
+                    color: HeracleTheme.textGrey,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
               .toList(),
         ),
       ],
@@ -723,10 +767,7 @@ class _ProgressGraphPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          color.withOpacity(0.2),
-          color.withOpacity(0.0),
-        ],
+        colors: [color.withOpacity(0.2), color.withOpacity(0.0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final path = Path();
@@ -756,8 +797,8 @@ class _ProgressGraphPainter extends CustomPainter {
 
     // Draw grid lines
     final gridPaint = Paint()
-      ..color = isDarkTheme 
-          ? Colors.white.withOpacity(0.05) 
+      ..color = isDarkTheme
+          ? Colors.white.withOpacity(0.05)
           : Colors.black.withOpacity(0.05)
       ..strokeWidth = 1;
 
@@ -787,5 +828,7 @@ class _ProgressGraphPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ProgressGraphPainter oldDelegate) =>
-      oldDelegate.data != data || oldDelegate.color != color || oldDelegate.isDarkTheme != isDarkTheme;
+      oldDelegate.data != data ||
+      oldDelegate.color != color ||
+      oldDelegate.isDarkTheme != isDarkTheme;
 }
