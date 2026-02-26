@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
 import 'package:ai_heracle_fit/core/models/workout_card_data.dart';
+import 'package:ai_heracle_fit/core/services/diet_service.dart';
 import 'package:ai_heracle_fit/core/services/workout_card_service.dart';
 import 'package:ai_heracle_fit/page/diet_planning/diet_planning_screen.dart';
+import 'package:ai_heracle_fit/page/diet_planning/diet_preferences_screen.dart';
 import 'package:ai_heracle_fit/page/set_goal/set_goal_screen.dart';
 import 'package:ai_heracle_fit/page/sleep_coach/sleep_coach_screen.dart';
 
@@ -46,6 +48,29 @@ class _AiCardsSectionState extends State<AiCardsSection> {
     }
   }
 
+  Future<void> _openDietCard(BuildContext context) async {
+    final todayDiet = await DietService.instance.fetchTodayDiet();
+    if (!mounted) return;
+
+    if (todayDiet == null) {
+      // New user — collect preferences first
+      final result = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const DietPreferencesScreen()),
+      );
+      // After saving preferences navigate to the diet plan
+      if (result == true && mounted) {
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const DietPlanningScreen()));
+      }
+    } else {
+      // Returning user — go straight to the diet plan
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const DietPlanningScreen()));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -81,14 +106,7 @@ class _AiCardsSectionState extends State<AiCardsSection> {
               child: Column(
                 children: [
                   InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DietPlanningScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _openDietCard(context),
                     borderRadius: BorderRadius.circular(26),
                     child: _buildProfessionalSmallCard(
                       title: 'Diet Planning',
