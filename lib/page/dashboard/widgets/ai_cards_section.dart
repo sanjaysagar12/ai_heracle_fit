@@ -7,6 +7,7 @@ import 'package:ai_heracle_fit/page/diet_planning/diet_planning_screen.dart';
 import 'package:ai_heracle_fit/page/diet_planning/diet_preferences_screen.dart';
 import 'package:ai_heracle_fit/page/set_goal/set_goal_screen.dart';
 import 'package:ai_heracle_fit/page/sleep_coach/sleep_coach_screen.dart';
+import 'package:ai_heracle_fit/page/workout/workout_detail_screen.dart';
 
 class AiCardsSection extends StatefulWidget {
   const AiCardsSection({super.key});
@@ -71,6 +72,17 @@ class _AiCardsSectionState extends State<AiCardsSection> {
     }
   }
 
+  Future<void> _openWorkoutDetail(BuildContext context) async {
+    final sessions = await WorkoutCardService.instance.fetchSessions();
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            WorkoutDetailScreen(todayCard: _cardData, sessions: sessions),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -96,7 +108,7 @@ class _AiCardsSectionState extends State<AiCardsSection> {
                       intensity: _cardData.chipIntensity,
                       onButtonTap: _cardData.isNewUser
                           ? () => _openSetGoal(context)
-                          : () {},
+                          : () => _openWorkoutDetail(context),
                     ),
             ),
             const SizedBox(width: 16),

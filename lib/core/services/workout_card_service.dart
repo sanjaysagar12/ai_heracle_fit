@@ -34,8 +34,34 @@ class WorkoutCardService {
     return WorkoutCardData.newUser;
   }
 
+  /// GET /api/workout/sessions
+  /// Returns the list of sessions (may be empty).
+  Future<List<WorkoutSession>> fetchSessions() async {
+    try {
+      final response = await ApiClient.instance.get('/api/workout/sessions');
+      if (response.statusCode == 200 && response.data != null) {
+        final raw = response.data;
+        List<dynamic> list = [];
+        if (raw is List) {
+          list = raw;
+        } else if (raw is String) {
+          final decoded = jsonDecode(raw);
+          if (decoded is List) list = decoded;
+        }
+        return list
+            .map(
+              (e) =>
+                  WorkoutSession.fromJson(Map<String, dynamic>.from(e as Map)),
+            )
+            .toList();
+      }
+    } catch (e) {
+      print('[WorkoutCardService] fetchSessions error: $e');
+    }
+    return [];
+  }
+
   /// Safely converts [raw] to a [Map<String, dynamic>].
-  /// Handles both pre-decoded Maps and raw JSON strings.
   Map<String, dynamic>? _toMap(dynamic raw) {
     if (raw == null) return null;
     if (raw is Map) return Map<String, dynamic>.from(raw);
