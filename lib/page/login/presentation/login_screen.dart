@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/services/auth_service.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
-import 'package:ai_heracle_fit/page/dashboard/presentation/dashboard_screen.dart';
+import 'package:ai_heracle_fit/page/body_metrics/body_metrics_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (jwt != null && mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const DashboardScreen(),
+            pageBuilder: (_, __, ___) => const BodyMetricsScreen(),
             transitionsBuilder: (_, anim, __, child) =>
                 FadeTransition(opacity: anim, child: child),
             transitionDuration: const Duration(milliseconds: 500),
