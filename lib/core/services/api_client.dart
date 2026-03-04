@@ -13,7 +13,7 @@ class ApiClient {
   ApiClient._();
 
   static const _baseUrl =
-      'http://10.0.2.2:3000'; // Android emulator → localhost
+      'http://10.24.185.79:3000'; // Android emulator → localhost
 
   static final ApiClient _singleton = ApiClient._();
   static ApiClient get instance => _singleton;
