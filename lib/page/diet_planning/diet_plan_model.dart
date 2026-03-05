@@ -6,7 +6,6 @@ class DietPlan {
   final int calories;
   final int protein;
   final int carbs;
-  final int fats;
   final IconData icon;
   final Color color;
 
@@ -16,7 +15,6 @@ class DietPlan {
     required this.calories,
     required this.protein,
     required this.carbs,
-    required this.fats,
     required this.icon,
     required this.color,
   });
@@ -24,33 +22,23 @@ class DietPlan {
 
 final List<DietPlan> mockDietPlans = [
   DietPlan(
-    name: 'Steak & Greens',
-    description: 'High protein, low carb dinner to hit your targets.',
-    calories: 620,
-    protein: 45,
-    carbs: 8,
-    fats: 32,
-    icon: Icons.restaurant_rounded,
-    color: const Color(0xFFE91E63),
+    name: 'Strength & Muscle',
+    description:
+        'High protein focus to support muscle growth and recovery after intense training session.',
+    calories: 2800,
+    protein: 210,
+    carbs: 310,
+    icon: Icons.fitness_center_rounded,
+    color: Colors.blueAccent,
   ),
   DietPlan(
-    name: 'Salmon Quinoa Bowl',
-    description: 'Rich in Omega-3 and complex carbs for recovery.',
-    calories: 580,
-    protein: 38,
-    carbs: 45,
-    fats: 22,
-    icon: Icons.set_meal_rounded,
-    color: const Color(0xFF2196F3),
-  ),
-  DietPlan(
-    name: 'Greek Yogurt Parfait',
-    description: 'Quick protein-packed snack to bridge the gap.',
-    calories: 320,
-    protein: 25,
-    carbs: 35,
-    fats: 8,
-    icon: Icons.icecream_rounded,
-    color: const Color(0xFF4CAF50),
+    name: 'Lean & Toned',
+    description:
+        'Moderate protein and lower carb intake to help maintain muscle while reducing body fat.',
+    calories: 2100,
+    protein: 160,
+    carbs: 180,
+    icon: Icons.monitor_weight_rounded,
+    color: Colors.teal,
   ),
 ];

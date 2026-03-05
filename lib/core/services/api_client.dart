@@ -12,8 +12,10 @@ const String _jwtKey = 'backend_jwt';
 class ApiClient {
   ApiClient._();
 
-  static const _baseUrl =
-      'http://10.24.185.79:3000'; // Android emulator → localhost
+  static const _baseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'http://10.24.185.79:3000',
+  );
 
   static final ApiClient _singleton = ApiClient._();
   static ApiClient get instance => _singleton;

@@ -8,6 +8,8 @@ class BodyMetrics {
   final String bodyType; // ectomorph | mesomorph | endomorph
   final String
   goal; // muscle_gain | fat_loss | endurance | flexibility | general_fitness
+  final double goalWeightKg;
+  final double goalWeightLbs;
 
   const BodyMetrics({
     required this.age,
@@ -18,6 +20,8 @@ class BodyMetrics {
     required this.weightLbs,
     required this.bodyType,
     required this.goal,
+    required this.goalWeightKg,
+    required this.goalWeightLbs,
   });
 
   Map<String, dynamic> toJson() => {
@@ -29,6 +33,8 @@ class BodyMetrics {
     'weightLbs': double.parse(weightLbs.toStringAsFixed(1)),
     'bodyType': bodyType,
     'goal': goal,
+    'goalWeightKg': goalWeightKg,
+    'goalWeightLbs': double.parse(goalWeightLbs.toStringAsFixed(1)),
   };
 
   /// Converts cm ↔ ft helpers

@@ -23,10 +23,11 @@ class _BodyMetricsScreenState extends State<BodyMetricsScreen> {
   bool _useMetricHeight = true;
   double _weightKg = 70;
   bool _useMetricWeight = true;
+  double _goalWeightKg = 70;
   String _bodyType = '';
   String _goal = '';
 
-  static const _totalPages = 6;
+  static const _totalPages = 7;
 
   // ── Validation ─────────────────────────────────────────────────────────────
   bool get _canProceed {
@@ -43,6 +44,8 @@ class _BodyMetricsScreenState extends State<BodyMetricsScreen> {
         return _bodyType.isNotEmpty;
       case 5:
         return _goal.isNotEmpty;
+      case 6:
+        return true; // goal weight always valid
       default:
         return false;
     }
@@ -74,6 +77,7 @@ class _BodyMetricsScreenState extends State<BodyMetricsScreen> {
 
     final heightFt = BodyMetrics.cmToFt(_heightCm);
     final weightLbs = BodyMetrics.kgToLbs(_weightKg);
+    final goalWeightLbs = BodyMetrics.kgToLbs(_goalWeightKg);
 
     final metrics = BodyMetrics(
       age: _age,
@@ -84,6 +88,8 @@ class _BodyMetricsScreenState extends State<BodyMetricsScreen> {
       weightLbs: weightLbs,
       bodyType: _bodyType,
       goal: _goal,
+      goalWeightKg: double.parse(_goalWeightKg.toStringAsFixed(1)),
+      goalWeightLbs: goalWeightLbs,
     );
 
     final success = await BodyMetricsService.instance.saveMetrics(metrics);
@@ -143,6 +149,7 @@ class _BodyMetricsScreenState extends State<BodyMetricsScreen> {
                     _buildPage4Weight(),
                     _buildPage5BodyType(),
                     _buildPage6Goal(),
+                    _buildPage7GoalWeight(),
                   ],
                 ),
               ),
@@ -670,6 +677,71 @@ class _BodyMetricsScreenState extends State<BodyMetricsScreen> {
       ],
     ),
   );
+
+  // ── Page 7: Goal Weight ────────────────────────────────────────────────────
+  Widget _buildPage7GoalWeight() {
+    final goalWeightLbs = BodyMetrics.kgToLbs(_goalWeightKg);
+    return _pageShell(
+      title: 'What\'s your\ntarget weight?',
+      subtitle: 'We\'ll use this to adjust your calorie targets.',
+      child: Column(
+        children: [
+          _unitToggle(
+            leftLabel: 'kg',
+            rightLabel: 'lbs',
+            useLeft: _useMetricWeight,
+            onToggle: (v) => setState(() => _useMetricWeight = v),
+          ),
+          const Spacer(),
+          Text(
+            _useMetricWeight
+                ? '${_goalWeightKg.toStringAsFixed(0)} kg'
+                : '${goalWeightLbs.toStringAsFixed(0)} lbs',
+            style: const TextStyle(
+              fontSize: 60,
+              fontWeight: FontWeight.w900,
+              color: HeracleTheme.textBlack,
+              letterSpacing: -2,
+            ),
+          ),
+          const SizedBox(height: 32),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: const Color(0xFF1D1B20),
+              inactiveTrackColor: Colors.black12,
+              thumbColor: const Color(0xFF1D1B20),
+              overlayColor: const Color(0xFF1D1B20).withOpacity(0.1),
+              trackHeight: 6,
+            ),
+            child: Slider(
+              value: _goalWeightKg,
+              min: 30,
+              max: 200,
+              divisions: 170,
+              onChanged: (v) => setState(() => _goalWeightKg = v),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text(
+                  '30 kg',
+                  style: TextStyle(color: HeracleTheme.textGrey, fontSize: 12),
+                ),
+                Text(
+                  '200 kg',
+                  style: TextStyle(color: HeracleTheme.textGrey, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(flex: 2),
+        ],
+      ),
+    );
+  }
 
   // ── Unit toggle helper ─────────────────────────────────────────────────────
   Widget _unitToggle({

@@ -1,6 +1,10 @@
-import 'dart:convert';
 import 'package:ai_heracle_fit/core/models/diet_preferences.dart';
+import 'package:ai_heracle_fit/core/models/logged_meal.dart';
+import 'package:ai_heracle_fit/core/models/diet_status.dart';
+import 'package:ai_heracle_fit/core/models/tracked_food.dart';
+import 'package:ai_heracle_fit/core/models/diet_suggestion.dart';
 import 'package:ai_heracle_fit/core/services/api_client.dart';
+import 'package:intl/intl.dart';
 
 class DietService {
   DietService._();
@@ -8,16 +12,14 @@ class DietService {
 
   /// GET /api/diet/today
   /// Returns null when the user has no diet plan yet.
-  Future<Map<String, dynamic>?> fetchTodayDiet() async {
+  Future<DietSuggestion?> fetchTodayDiet() async {
     try {
       final response = await ApiClient.instance.get('/api/diet/today');
       if (response.statusCode == 204 || response.data == null) return null;
       if (response.statusCode == 200) {
         final raw = response.data;
-        if (raw is Map) return Map<String, dynamic>.from(raw);
-        if (raw is String) {
-          final decoded = jsonDecode(raw);
-          if (decoded is Map) return Map<String, dynamic>.from(decoded);
+        if (raw is Map<String, dynamic>) {
+          return DietSuggestion.fromJson(raw);
         }
       }
     } catch (e) {
@@ -38,5 +40,85 @@ class DietService {
       print('[DietService] savePreferences error: $e');
       return false;
     }
+  }
+
+  /// POST /api/diet/ai/food
+  /// Analyzes a food description using AI.
+  Future<TrackedFood?> analyzeFood(String description) async {
+    try {
+      final response = await ApiClient.instance.post(
+        '/api/diet/ai/food',
+        data: {'description': description},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) {
+          return TrackedFood.fromJson(data);
+        }
+      }
+    } catch (e) {
+      print('[DietService] analyzeFood error: $e');
+    }
+    return null;
+  }
+
+  /// POST /api/diet/meal
+  Future<LoggedMeal?> logMeal(LoggedMeal meal) async {
+    try {
+      final response = await ApiClient.instance.post(
+        '/api/diet/meal',
+        data: meal.toJson(),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) {
+          return LoggedMeal.fromJson(data);
+        }
+      }
+    } catch (e) {
+      print('[DietService] logMeal error: $e');
+    }
+    return null;
+  }
+
+  /// GET /api/diet/meals
+  /// [date] defaults to today (YYYY-MM-DD)
+  Future<List<LoggedMeal>> fetchMeals([String? date]) async {
+    try {
+      final queryDate = date ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final response = await ApiClient.instance.get(
+        '/api/diet/meals',
+        queryParameters: {'date': queryDate},
+      );
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List) {
+          return data
+              .map((e) => LoggedMeal.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    } catch (e) {
+      print('[DietService] fetchMeals error: $e');
+    }
+    return [];
+  }
+
+  /// GET /api/diet/status
+  Future<DietStatus?> fetchDietStatus([String? date]) async {
+    try {
+      final queryDate = date ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final response = await ApiClient.instance.get(
+        '/api/diet/status',
+        queryParameters: {'date': queryDate},
+      );
+      if (response.statusCode == 200) {
+        return DietStatus.fromJson(response.data as Map<String, dynamic>);
+      }
+    } catch (e) {
+      print('[DietService] fetchDietStatus error: $e');
+    }
+    return null;
   }
 }

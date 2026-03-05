@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
 import 'package:ai_heracle_fit/core/models/workout_card_data.dart';
-import 'package:ai_heracle_fit/core/services/diet_service.dart';
 import 'package:ai_heracle_fit/core/services/workout_card_service.dart';
+import 'package:ai_heracle_fit/core/services/user_service.dart';
+import 'package:ai_heracle_fit/page/body_metrics/body_metrics_screen.dart';
 import 'package:ai_heracle_fit/page/diet_planning/diet_planning_screen.dart';
 import 'package:ai_heracle_fit/page/diet_planning/diet_preferences_screen.dart';
 import 'package:ai_heracle_fit/page/set_goal/set_goal_screen.dart';
@@ -37,9 +38,20 @@ class _AiCardsSectionState extends State<AiCardsSection> {
   }
 
   Future<void> _openSetGoal(BuildContext context) async {
+    final status = await UserService.instance.fetchOnboardingStatus();
+    if (!mounted) return;
+
+    final Widget targetScreen;
+    if (status?.bodyMetricsNeeded ?? true) {
+      targetScreen = const BodyMetricsScreen();
+    } else {
+      targetScreen = const SetGoalScreen();
+    }
+
     final result = await Navigator.of(
       context,
-    ).push<bool>(MaterialPageRoute(builder: (_) => const SetGoalScreen()));
+    ).push<bool>(MaterialPageRoute(builder: (_) => targetScreen));
+
     // If user completed setup, refresh the card
     if (result == true) {
       setState(() {
@@ -50,10 +62,10 @@ class _AiCardsSectionState extends State<AiCardsSection> {
   }
 
   Future<void> _openDietCard(BuildContext context) async {
-    final todayDiet = await DietService.instance.fetchTodayDiet();
+    final status = await UserService.instance.fetchOnboardingStatus();
     if (!mounted) return;
 
-    if (todayDiet == null) {
+    if (status?.dietDataNeeded ?? true) {
       // New user — collect preferences first
       final result = await Navigator.of(context).push<bool>(
         MaterialPageRoute(builder: (_) => const DietPreferencesScreen()),

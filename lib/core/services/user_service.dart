@@ -1,4 +1,5 @@
 import 'package:ai_heracle_fit/core/models/user_profile.dart';
+import 'package:ai_heracle_fit/core/models/onboarding_status.dart';
 import 'package:ai_heracle_fit/core/services/api_client.dart';
 
 class UserService {
@@ -18,6 +19,25 @@ class UserService {
       return null;
     } catch (e) {
       print('[UserService] Failed to fetch profile: $e');
+      return null;
+    }
+  }
+
+  Future<OnboardingStatus?> fetchOnboardingStatus() async {
+    try {
+      final response = await ApiClient.instance.get(
+        '/api/user/onboarding-status',
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        return OnboardingStatus.fromJson(
+          Map<String, dynamic>.from(response.data as Map),
+        );
+      }
+      print('[UserService] Unexpected status: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      print('[UserService] Failed to fetch onboarding status: $e');
       return null;
     }
   }
