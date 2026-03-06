@@ -107,15 +107,7 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
       return;
     }
 
-    setState(() {
-      _isSearching = true;
-    });
-
-    // Show loading overlay immediately
-    if (_aiFoodFocusNode.hasFocus) {
-      _showOverlay();
-    }
-
+    // Searching is now handled silently until results arrive
     _debounceTimer = Timer(const Duration(milliseconds: 1000), () async {
       try {
         final results = await DietService.instance.searchFood(query);
@@ -124,8 +116,7 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
             _searchResults = results;
             _isSearching = false;
           });
-          if (_aiFoodFocusNode.hasFocus &&
-              (_searchResults.isNotEmpty || _isSearching)) {
+          if (_aiFoodFocusNode.hasFocus && _searchResults.isNotEmpty) {
             _showOverlay();
           } else {
             _hideOverlay();
@@ -156,7 +147,9 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
           child: CompositedTransformFollower(
             link: _layerLink,
             showWhenUnlinked: false,
-            offset: const Offset(0, 68), // below the input box
+            targetAnchor: Alignment.topLeft,
+            followerAnchor: Alignment.bottomLeft,
+            offset: const Offset(0, -10), // 10px above the input box
             child: Material(
               color: Colors.transparent,
               child: Container(
@@ -173,93 +166,76 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                   ],
                   border: Border.all(color: Colors.black.withOpacity(0.05)),
                 ),
-                child: _isSearching
-                    ? const Padding(
-                        padding: EdgeInsets.all(24.0),
-                        child: Center(
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: HeracleTheme.givingliGreenDark,
-                            ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: _searchResults.length,
+                    itemBuilder: (context, index) {
+                      final food = _searchResults[index];
+                      return InkWell(
+                        onTap: () {
+                          _handleFoodSelected(food);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
-                        ),
-                      )
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          shrinkWrap: true,
-                          itemCount: _searchResults.length,
-                          itemBuilder: (context, index) {
-                            final food = _searchResults[index];
-                            return InkWell(
-                              onTap: () {
-                                _handleFoodSelected(food);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: index != _searchResults.length - 1
-                                      ? Border(
-                                          bottom: BorderSide(
-                                            color: Colors.black.withOpacity(
-                                              0.05,
-                                            ),
-                                          ),
-                                        )
-                                      : null,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.fastfood_rounded,
-                                      color: HeracleTheme.givingliGreenDark,
-                                      size: 18,
+                          decoration: BoxDecoration(
+                            border: index != _searchResults.length - 1
+                                ? Border(
+                                    bottom: BorderSide(
+                                      color: Colors.black.withOpacity(0.05),
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            food.name,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: HeracleTheme.textBlack,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${food.calories} kcal • ${food.protein}P • ${food.carbs}C • ${food.fats}F',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: HeracleTheme.textGrey
-                                                  .withOpacity(0.8),
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
+                                  )
+                                : null,
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.fastfood_rounded,
+                                color: HeracleTheme.givingliGreenDark,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      food.name,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: HeracleTheme.textBlack,
                                       ),
                                     ),
-                                    const Icon(
-                                      Icons.add_circle,
-                                      color: HeracleTheme.givingliGreenDark,
-                                      size: 20,
+                                    Text(
+                                      '${food.calories} kcal • ${food.protein}P • ${food.carbs}C • ${food.fats}F',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: HeracleTheme.textGrey
+                                            .withOpacity(0.8),
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                            );
-                          },
+                              const Icon(
+                                Icons.add_circle,
+                                color: HeracleTheme.givingliGreenDark,
+                                size: 20,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
