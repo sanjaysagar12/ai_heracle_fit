@@ -33,7 +33,10 @@ class SleepCoachScreen extends StatelessWidget {
                 _buildHeader(context),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 5,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -162,7 +165,9 @@ class SleepCoachScreen extends StatelessWidget {
                         color: HeracleTheme.givingliYellowDark.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: HeracleTheme.givingliYellowDark.withOpacity(0.3),
+                          color: HeracleTheme.givingliYellowDark.withOpacity(
+                            0.3,
+                          ),
                         ),
                       ),
                       child: const Row(
@@ -265,16 +270,18 @@ class SleepCoachScreen extends StatelessWidget {
                   width: 30,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: ['10h', '7.5h', '5h', '2.5h', '0h'].map((label) => 
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: HeracleTheme.textGrey.withOpacity(0.5),
-                        ),
-                      ),
-                    ).toList(),
+                    children: ['10h', '7.5h', '5h', '2.5h', '0h']
+                        .map(
+                          (label) => Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: HeracleTheme.textGrey.withOpacity(0.5),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -285,8 +292,9 @@ class SleepCoachScreen extends StatelessWidget {
                       // Grid Lines
                       Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(5, (_) => 
-                          Container(
+                        children: List.generate(
+                          5,
+                          (_) => Container(
                             height: 1,
                             width: double.infinity,
                             color: Colors.black.withOpacity(0.03),
@@ -302,19 +310,28 @@ class SleepCoachScreen extends StatelessWidget {
                           children: mockSleepHistory.map((data) {
                             double heightFactor = data.hours / 10.0;
                             bool isSelected = data.day == 'Wed';
-                            
+
                             return Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     // Value tooltip-like text
                                     AnimatedContainer(
-                                      duration: const Duration(milliseconds: 300),
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: isSelected ? HeracleTheme.textBlack : Colors.transparent,
+                                        color: isSelected
+                                            ? HeracleTheme.textBlack
+                                            : Colors.transparent,
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
@@ -322,7 +339,9 @@ class SleepCoachScreen extends StatelessWidget {
                                         style: TextStyle(
                                           fontSize: 9,
                                           fontWeight: FontWeight.w800,
-                                          color: isSelected ? Colors.white : HeracleTheme.textGrey,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : HeracleTheme.textGrey,
                                         ),
                                       ),
                                     ),
@@ -330,22 +349,29 @@ class SleepCoachScreen extends StatelessWidget {
                                     // The Bar
                                     Container(
                                       width: double.infinity,
-                                      constraints: const BoxConstraints(maxWidth: 32),
-                                      height: 160 * heightFactor,
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 32,
+                                      ),
+                                      height: 150 * heightFactor,
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                           colors: [
                                             HeracleTheme.givingliYellowDark,
-                                            HeracleTheme.givingliYellowDark.withOpacity(isSelected ? 0.9 : 0.6),
+                                            HeracleTheme.givingliYellowDark
+                                                .withOpacity(
+                                                  isSelected ? 0.9 : 0.6,
+                                                ),
                                           ],
                                         ),
                                         borderRadius: BorderRadius.circular(8),
                                         boxShadow: [
                                           if (isSelected)
                                             BoxShadow(
-                                              color: HeracleTheme.givingliYellowDark.withOpacity(0.3),
+                                              color: HeracleTheme
+                                                  .givingliYellowDark
+                                                  .withOpacity(0.3),
                                               blurRadius: 12,
                                               offset: const Offset(0, 6),
                                             ),
@@ -379,8 +405,12 @@ class SleepCoachScreen extends StatelessWidget {
                       data.day,
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                        color: isSelected ? HeracleTheme.textBlack : HeracleTheme.textGrey.withOpacity(0.6),
+                        fontWeight: isSelected
+                            ? FontWeight.w900
+                            : FontWeight.w600,
+                        color: isSelected
+                            ? HeracleTheme.textBlack
+                            : HeracleTheme.textGrey.withOpacity(0.6),
                       ),
                     ),
                   ),
