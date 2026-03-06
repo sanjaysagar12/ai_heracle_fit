@@ -5,12 +5,12 @@ class BodyMetricsService {
   BodyMetricsService._();
   static final BodyMetricsService instance = BodyMetricsService._();
 
-  /// POST /api/user/body-metrics
+  /// POST /user/body-metrics
   /// Returns true on success.
   Future<bool> saveMetrics(BodyMetrics metrics) async {
     try {
       final response = await ApiClient.instance.post(
-        '/api/user/body-metrics',
+        '/user/body-metrics',
         data: metrics.toJson(),
       );
       final success = response.statusCode == 200 || response.statusCode == 201;

@@ -8,13 +8,13 @@ const String _jwtKey = 'backend_jwt';
 /// as a Bearer token to every outgoing request.
 ///
 /// Usage anywhere in the app:
-///   final response = await ApiClient.instance.get('/api/workouts');
+///   final response = await ApiClient.instance.get('/workouts');
 class ApiClient {
   ApiClient._();
 
   static const _baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://10.24.185.79:3000',
+    defaultValue: 'https://ai-heracle-backend.vercel.app',
   );
 
   static final ApiClient _singleton = ApiClient._();

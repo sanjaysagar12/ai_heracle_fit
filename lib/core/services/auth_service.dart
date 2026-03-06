@@ -67,7 +67,7 @@ class AuthService {
   Future<String?> _exchangeTokenWithBackend(String firebaseIdToken) async {
     // postUnauthenticated handles errors internally, returns null on failure.
     final body = await ApiClient.instance.postUnauthenticated(
-      '/api/auth/google/token',
+      '/auth/google/token',
       data: {'idToken': firebaseIdToken},
     );
 

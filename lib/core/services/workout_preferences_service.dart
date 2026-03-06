@@ -6,12 +6,12 @@ class WorkoutPreferencesService {
   static final WorkoutPreferencesService instance =
       WorkoutPreferencesService._();
 
-  /// POST /api/workout/preferences
+  /// POST /workout/preferences
   /// Returns true on success.
   Future<bool> savePreferences(WorkoutPreferences prefs) async {
     try {
       final response = await ApiClient.instance.post(
-        '/api/workout/preferences',
+        '/workout/preferences',
         data: prefs.toJson(),
       );
 

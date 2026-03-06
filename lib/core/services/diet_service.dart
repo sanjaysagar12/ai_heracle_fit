@@ -10,11 +10,11 @@ class DietService {
   DietService._();
   static final DietService instance = DietService._();
 
-  /// GET /api/diet/today
+  /// GET /diet/today
   /// Returns null when the user has no diet plan yet.
   Future<DietSuggestion?> fetchTodayDiet() async {
     try {
-      final response = await ApiClient.instance.get('/api/diet/today');
+      final response = await ApiClient.instance.get('/diet/today');
       if (response.statusCode == 204 || response.data == null) return null;
       if (response.statusCode == 200) {
         final raw = response.data;
@@ -28,11 +28,11 @@ class DietService {
     return null;
   }
 
-  /// POST /api/diet/preferences
+  /// POST /diet/preferences
   Future<bool> savePreferences(DietPreferences prefs) async {
     try {
       final response = await ApiClient.instance.post(
-        '/api/diet/preferences',
+        '/diet/preferences',
         data: prefs.toJson(),
       );
       return response.statusCode == 200 || response.statusCode == 201;
@@ -42,12 +42,12 @@ class DietService {
     }
   }
 
-  /// POST /api/diet/ai/food
+  /// POST /diet/ai/food
   /// Analyzes a food description using AI.
   Future<TrackedFood?> analyzeFood(String description) async {
     try {
       final response = await ApiClient.instance.post(
-        '/api/diet/ai/food',
+        '/diet/ai/food',
         data: {'description': description},
       );
 
@@ -63,11 +63,11 @@ class DietService {
     return null;
   }
 
-  /// POST /api/diet/meal
+  /// POST /diet/meal
   Future<LoggedMeal?> logMeal(LoggedMeal meal) async {
     try {
       final response = await ApiClient.instance.post(
-        '/api/diet/meal',
+        '/diet/meal',
         data: meal.toJson(),
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -82,13 +82,13 @@ class DietService {
     return null;
   }
 
-  /// GET /api/diet/meals
+  /// GET /diet/meals
   /// [date] defaults to today (YYYY-MM-DD)
   Future<List<LoggedMeal>> fetchMeals([String? date]) async {
     try {
       final queryDate = date ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
       final response = await ApiClient.instance.get(
-        '/api/diet/meals',
+        '/diet/meals',
         queryParameters: {'date': queryDate},
       );
       if (response.statusCode == 200) {
@@ -105,12 +105,12 @@ class DietService {
     return [];
   }
 
-  /// GET /api/diet/status
+  /// GET /diet/status
   Future<DietStatus?> fetchDietStatus([String? date]) async {
     try {
       final queryDate = date ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
       final response = await ApiClient.instance.get(
-        '/api/diet/status',
+        '/diet/status',
         queryParameters: {'date': queryDate},
       );
       if (response.statusCode == 200) {

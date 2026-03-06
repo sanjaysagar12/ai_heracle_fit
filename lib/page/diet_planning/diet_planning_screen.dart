@@ -656,64 +656,7 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      // TAB 1: Diet Plan
-                      SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 15,
-                          vertical: 16,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildAiSummaryCard(),
-                            const SizedBox(height: 33),
-                            if (_aiSuggestion != null &&
-                                _aiSuggestion!.suggestedMeal.isNotEmpty) ...[
-                              const Text(
-                                'Suggested for You',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  color: HeracleTheme.textBlack,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Based on your protein and calorie targets for today.',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: HeracleTheme.textGrey.withOpacity(0.8),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              ..._aiSuggestion!.suggestedMeal.map(
-                                (item) => _buildSuggestedMealCard(item),
-                              ),
-                            ] else if (_aiSuggestion == null) ...[
-                              // Loading state for suggested meals
-                              const Center(child: CircularProgressIndicator()),
-                            ] else ...[
-                              const Text(
-                                'Trending Diet Plans',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  color: HeracleTheme.textBlack,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              ...mockDietPlans.map(
-                                (plan) => _buildDietPlanCard(plan),
-                              ),
-                            ],
-                            const SizedBox(height: 40),
-                          ],
-                        ),
-                      ),
-
-                      // TAB 2: Track Calories (Matched to Screenshot UI)
+                      // TAB 1: Track Calories (Matched to Screenshot UI)
                       SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -773,6 +716,63 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                           ],
                         ),
                       ),
+
+                      // TAB 2: Diet Plan
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 15,
+                          vertical: 16,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildAiSummaryCard(),
+                            const SizedBox(height: 33),
+                            if (_aiSuggestion != null &&
+                                _aiSuggestion!.suggestedMeal.isNotEmpty) ...[
+                              const Text(
+                                'Suggested for You',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  color: HeracleTheme.textBlack,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Based on your protein and calorie targets for today.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: HeracleTheme.textGrey.withOpacity(0.8),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              ..._aiSuggestion!.suggestedMeal.map(
+                                (item) => _buildSuggestedMealCard(item),
+                              ),
+                            ] else if (_aiSuggestion == null) ...[
+                              // Loading state for suggested meals
+                              const Center(child: CircularProgressIndicator()),
+                            ] else ...[
+                              const Text(
+                                'Trending Diet Plans',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  color: HeracleTheme.textBlack,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              ...mockDietPlans.map(
+                                (plan) => _buildDietPlanCard(plan),
+                              ),
+                            ],
+                            const SizedBox(height: 40),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -821,8 +821,8 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
             fontWeight: FontWeight.w600,
           ),
           tabs: const [
-            Tab(text: 'Plan'),
             Tab(text: 'Track'),
+            Tab(text: 'Plan'),
           ],
         ),
       ),
@@ -1038,12 +1038,48 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                // Macros Row
+                Row(
+                  children: [
+                    _buildMealMacroStat('P', '${item.protein}g'),
+                    const SizedBox(width: 12),
+                    _buildMealMacroStat('C', '${item.carbs}g'),
+                    const SizedBox(width: 12),
+                    _buildMealMacroStat('F', '${item.fat}g'),
+                    const SizedBox(width: 12),
+                    _buildMealMacroStat('Fi', '${item.fiber}g'),
+                  ],
+                ),
               ],
             ),
           ),
           const Icon(Icons.chevron_right_rounded, color: HeracleTheme.textGrey),
         ],
       ),
+    );
+  }
+
+  Widget _buildMealMacroStat(String label, String value) {
+    return Row(
+      children: [
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: HeracleTheme.textBlack.withOpacity(0.5),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: HeracleTheme.textBlack,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1111,34 +1147,16 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    _buildMiniMacroStat('${plan.calories}kcal'),
+                    _buildMealMacroStat('Calories', '${plan.calories}kcal'),
                     const SizedBox(width: 8),
-                    _buildMiniMacroStat('${plan.protein}g Protein'),
+                    _buildMealMacroStat('Protein', '${plan.protein}g'),
                     const SizedBox(width: 8),
-                    _buildMiniMacroStat('${plan.carbs}g Carbs'),
+                    _buildMealMacroStat('Carbs', '${plan.carbs}g'),
                   ],
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMiniMacroStat(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: HeracleTheme.textBlack.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: HeracleTheme.textBlack,
         ),
       ),
     );

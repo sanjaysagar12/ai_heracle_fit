@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:ai_heracle_fit/core/services/auth_service.dart';
+import 'package:ai_heracle_fit/core/services/user_service.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
 import 'package:ai_heracle_fit/page/body_metrics/body_metrics_screen.dart';
+import 'package:ai_heracle_fit/page/dashboard/presentation/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,9 +46,19 @@ class _LoginScreenState extends State<LoginScreen>
     try {
       final jwt = await _authService.signInWithGoogle();
       if (jwt != null && mounted) {
+        final status = await UserService.instance.fetchOnboardingStatus();
+        if (!mounted) return;
+
+        final Widget targetScreen;
+        if (status?.bodyMetricsNeeded ?? true) {
+          targetScreen = const BodyMetricsScreen();
+        } else {
+          targetScreen = const DashboardScreen();
+        }
+
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const BodyMetricsScreen(),
+            pageBuilder: (_, __, ___) => targetScreen,
             transitionsBuilder: (_, anim, __, child) =>
                 FadeTransition(opacity: anim, child: child),
             transitionDuration: const Duration(milliseconds: 500),

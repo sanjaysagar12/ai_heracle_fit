@@ -6,13 +6,13 @@ class WorkoutCardService {
   WorkoutCardService._();
   static final WorkoutCardService instance = WorkoutCardService._();
 
-  /// GET /api/workout/today
+  /// GET /workout/today
   ///
   /// Returns [WorkoutCardData.newUser] when the server returns null
   /// (new user with no plan yet) or on any network/parse error.
   Future<WorkoutCardData> fetchTodayCard() async {
     try {
-      final response = await ApiClient.instance.get('/api/workout/today');
+      final response = await ApiClient.instance.get('/workout/today');
 
       // 204 No Content or explicit null body → new user
       if (response.statusCode == 204 || response.data == null) {
@@ -34,11 +34,11 @@ class WorkoutCardService {
     return WorkoutCardData.newUser;
   }
 
-  /// GET /api/workout/sessions
+  /// GET /workout/sessions
   /// Returns the list of sessions (may be empty).
   Future<List<WorkoutSession>> fetchSessions() async {
     try {
-      final response = await ApiClient.instance.get('/api/workout/sessions');
+      final response = await ApiClient.instance.get('/workout/sessions');
       if (response.statusCode == 200 && response.data != null) {
         final raw = response.data;
         List<dynamic> list = [];
