@@ -46,14 +46,20 @@ class SuggestedMealItem {
   });
 
   factory SuggestedMealItem.fromJson(Map<String, dynamic> json) {
+    int toInt(dynamic val) {
+      if (val == null) return 0;
+      if (val is num) return val.toInt();
+      return 0;
+    }
+
     return SuggestedMealItem(
-      name: json['name'] as String,
-      purpose: json['purpose'] as String,
-      calories: json['calories'] as int,
-      protein: json['protein'] as int,
-      carbs: json['carbs'] as int,
-      fat: json['fat'] as int,
-      fiber: json['fiber'] as int,
+      name: json['name'] as String? ?? 'Unknown',
+      purpose: json['purpose'] as String? ?? 'General',
+      calories: toInt(json['calories']),
+      protein: toInt(json['protein']),
+      carbs: toInt(json['carbs']),
+      fat: toInt(json['fat']),
+      fiber: toInt(json['fiber']),
     );
   }
 }
