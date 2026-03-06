@@ -18,15 +18,19 @@ class TrackedFood {
   });
 
   factory TrackedFood.fromJson(Map<String, dynamic> json) {
+    int toInt(dynamic val) {
+      if (val == null) return 0;
+      if (val is num) return val.toInt();
+      return 0;
+    }
+
     return TrackedFood(
       name: json['name'] as String? ?? 'Unknown Food',
-      calories: json['calories'] as int? ?? 0,
-      protein: json['protein'] as int? ?? 0,
-      carbs: json['carbs'] as int? ?? 0,
-      fats:
-          (json['fats'] ?? json['fat']) as int? ??
-          0, // Handle both 'fats' and 'fat'
-      fiber: json['fiber'] as int? ?? 0,
+      calories: toInt(json['calories']),
+      protein: toInt(json['protein']),
+      carbs: toInt(json['carbs']),
+      fats: toInt(json['fats'] ?? json['fat']),
+      fiber: toInt(json['fiber']),
       mealType: json['mealType'] as String? ?? 'Other',
     );
   }

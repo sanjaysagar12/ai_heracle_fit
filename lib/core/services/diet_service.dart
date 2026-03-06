@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:ai_heracle_fit/core/models/diet_preferences.dart';
 import 'package:ai_heracle_fit/core/models/logged_meal.dart';
 import 'package:ai_heracle_fit/core/models/diet_status.dart';
@@ -43,12 +45,23 @@ class DietService {
   }
 
   /// POST /diet/ai/food
-  /// Analyzes a food description using AI.
-  Future<TrackedFood?> analyzeFood(String description) async {
+  /// Analyzes a food description and/or image using AI.
+  Future<TrackedFood?> analyzeFood(String description, {File? image}) async {
     try {
+      dynamic requestData;
+
+      if (image != null) {
+        requestData = FormData.fromMap({
+          'description': description,
+          'image': await MultipartFile.fromFile(image.path),
+        });
+      } else {
+        requestData = {'description': description};
+      }
+
       final response = await ApiClient.instance.post(
         '/diet/ai/food',
-        data: {'description': description},
+        data: requestData,
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -61,6 +74,29 @@ class DietService {
       print('[DietService] analyzeFood error: $e');
     }
     return null;
+  }
+
+  /// GET /diet/food/search?query=...
+  /// Performs a live search for foods matching the query.
+  Future<List<TrackedFood>> searchFood(String query) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      final response = await ApiClient.instance.get(
+        '/diet/food/search',
+        queryParameters: {'query': query.trim()},
+      );
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List) {
+          return data
+              .map((e) => TrackedFood.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    } catch (e) {
+      print('[DietService] searchFood error: $e');
+    }
+    return [];
   }
 
   /// POST /diet/meal

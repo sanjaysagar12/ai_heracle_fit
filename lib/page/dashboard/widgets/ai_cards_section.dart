@@ -65,7 +65,7 @@ class _AiCardsSectionState extends State<AiCardsSection> {
     final status = await UserService.instance.fetchOnboardingStatus();
     if (!mounted) return;
 
-    if (status?.dietDataNeeded ?? true) {
+    if (status?.dietDataNeeded ?? false) {
       // New user — collect preferences first
       final result = await Navigator.of(context).push<bool>(
         MaterialPageRoute(builder: (_) => const DietPreferencesScreen()),

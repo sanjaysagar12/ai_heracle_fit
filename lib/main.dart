@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
-import 'package:ai_heracle_fit/page/login/presentation/login_screen.dart';
+import 'package:ai_heracle_fit/page/login/presentation/splash_screen.dart';
+
+import 'package:ai_heracle_fit/core/services/navigation_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,10 +17,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: NavigationService.navigatorKey,
       title: 'Heracle Fit',
       debugShowCheckedModeBanner: false,
       theme: HeracleTheme.lightTheme,
-      home: const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }

@@ -1,5 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
+import 'package:ai_heracle_fit/core/services/navigation_service.dart';
+import 'package:ai_heracle_fit/page/login/presentation/login_screen.dart';
+import 'package:ai_heracle_fit/core/services/auth_service.dart';
 
 // Top-level constant — shared by ApiClient and _AuthInterceptor
 const String _jwtKey = 'backend_jwt';
@@ -14,7 +18,7 @@ class ApiClient {
 
   static const _baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'https://ai-heracle-backend.vercel.app',
+    defaultValue: 'http://10.24.185.79:3000',
   );
 
   static final ApiClient _singleton = ApiClient._();
@@ -98,6 +102,8 @@ class ApiClient {
 // ── Auth Interceptor ──────────────────────────────────────────────────────────
 
 class _AuthInterceptor extends Interceptor {
+  bool _isLoggingOut = false;
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -117,10 +123,28 @@ class _AuthInterceptor extends Interceptor {
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      print('[ApiClient] 401 Unauthorized — JWT may be expired.');
-      // TODO: trigger re-login or token refresh here if needed
+      print('[ApiClient] 401 Unauthorized — Automatic logout triggered.');
+
+      if (!_isLoggingOut) {
+        _isLoggingOut = true;
+
+        // 1. Clear session
+        await AuthService().signOut();
+
+        // 2. Redirect to Login
+        final nav = NavigationService.navigatorKey.currentState;
+        if (nav != null) {
+          nav.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+
+        // Reset flag after a delay to allow future valid logins
+        Future.delayed(const Duration(seconds: 2), () => _isLoggingOut = false);
+      }
     }
     handler.next(err);
   }

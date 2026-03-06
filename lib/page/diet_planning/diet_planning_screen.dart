@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:ai_heracle_fit/core/theme.dart';
 import 'package:ai_heracle_fit/core/models/tracked_food.dart';
 import 'package:ai_heracle_fit/core/models/logged_meal.dart';
@@ -22,14 +24,27 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _aiFoodController = TextEditingController();
+  final FocusNode _aiFoodFocusNode = FocusNode();
+
   bool _isAiLoading = false;
   String _selectedMealType = 'Breakfast';
 
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+
   final List<TrackedFood> _scannedPreviewMeals = [];
+
+  // Live search state
+  Timer? _debounceTimer;
+  bool _isSearching = false;
+  List<TrackedFood> _searchResults = [];
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
 
   List<LoggedMeal> _trackedMeals = [];
   DietStatus? _dietStatus;
   DietSuggestion? _aiSuggestion;
+  bool _isStatusLoading = true;
 
   String _getDefaultMealType() {
     final hour = DateTime.now().hour;
@@ -44,6 +59,17 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _selectedMealType = _getDefaultMealType();
+
+    _aiFoodFocusNode.addListener(() {
+      if (_aiFoodFocusNode.hasFocus) {
+        if (_searchResults.isNotEmpty || _isSearching) {
+          _showOverlay();
+        }
+      } else {
+        _hideOverlay();
+      }
+    });
+
     _loadLoggedMeals();
   }
 
@@ -55,6 +81,7 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
       _trackedMeals = meals;
       _dietStatus = status;
       _aiSuggestion = suggestion;
+      _isStatusLoading = false;
     });
   }
 
@@ -62,81 +89,349 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
   void dispose() {
     _tabController.dispose();
     _aiFoodController.dispose();
+    _aiFoodFocusNode.dispose();
+    _debounceTimer?.cancel();
+    _hideOverlay();
     super.dispose();
   }
 
-  Widget _buildAiInputBox() {
-    return Container(
-      margin: const EdgeInsets.only(top: 24, bottom: 8),
-      padding: const EdgeInsets.only(left: 20, right: 8, top: 4, bottom: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: HeracleTheme.textBlack.withOpacity(0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+  void _onSearchChanged(String query) {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+
+    if (query.trim().isEmpty) {
+      setState(() {
+        _searchResults.clear();
+        _isSearching = false;
+      });
+      _hideOverlay();
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    // Show loading overlay immediately
+    if (_aiFoodFocusNode.hasFocus) {
+      _showOverlay();
+    }
+
+    _debounceTimer = Timer(const Duration(milliseconds: 1000), () async {
+      try {
+        final results = await DietService.instance.searchFood(query);
+        if (mounted) {
+          setState(() {
+            _searchResults = results;
+            _isSearching = false;
+          });
+          if (_aiFoodFocusNode.hasFocus &&
+              (_searchResults.isNotEmpty || _isSearching)) {
+            _showOverlay();
+          } else {
+            _hideOverlay();
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isSearching = false);
+          _hideOverlay();
+        }
+      }
+    });
+  }
+
+  void _showOverlay() {
+    if (_overlayEntry != null) {
+      _overlayEntry!.markNeedsBuild();
+      return;
+    }
+
+    final RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) {
+        return Positioned(
+          width: size.width - 48, // matching constraints horizontally roughly
+          child: CompositedTransformFollower(
+            link: _layerLink,
+            showWhenUnlinked: false,
+            offset: const Offset(0, 68), // below the input box
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 250),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                  border: Border.all(color: Colors.black.withOpacity(0.05)),
+                ),
+                child: _isSearching
+                    ? const Padding(
+                        padding: EdgeInsets.all(24.0),
+                        child: Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: HeracleTheme.givingliGreenDark,
+                            ),
+                          ),
+                        ),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: ListView.builder(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: _searchResults.length,
+                          itemBuilder: (context, index) {
+                            final food = _searchResults[index];
+                            return InkWell(
+                              onTap: () {
+                                _handleFoodSelected(food);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: index != _searchResults.length - 1
+                                      ? Border(
+                                          bottom: BorderSide(
+                                            color: Colors.black.withOpacity(
+                                              0.05,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.fastfood_rounded,
+                                      color: HeracleTheme.givingliGreenDark,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            food.name,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: HeracleTheme.textBlack,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${food.calories} kcal • ${food.protein}P • ${food.carbs}C • ${food.fats}F',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: HeracleTheme.textGrey
+                                                  .withOpacity(0.8),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.add_circle,
+                                      color: HeracleTheme.givingliGreenDark,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+              ),
+            ),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _aiFoodController,
-              decoration: const InputDecoration(
-                hintText: 'e.g. "Oatmeal with berries"',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 14),
-                hintStyle: TextStyle(
-                  color: HeracleTheme.textGrey,
-                  fontWeight: FontWeight.w500,
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _hideOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  void _handleFoodSelected(TrackedFood food) {
+    setState(() {
+      food.mealType = _selectedMealType;
+      _scannedPreviewMeals.insert(0, food);
+      _aiFoodController.clear();
+      _searchResults.clear();
+      _isSearching = false;
+      _aiFoodFocusNode.unfocus();
+    });
+    _hideOverlay();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      print('Failed to pick image: $e');
+    }
+  }
+
+  Widget _buildAiInputBox() {
+    final bool hasInput =
+        _aiFoodController.text.trim().isNotEmpty || _selectedImage != null;
+
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: Container(
+        margin: const EdgeInsets.only(top: 24, bottom: 8),
+        padding: const EdgeInsets.only(left: 12, right: 8, top: 6, bottom: 6),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: HeracleTheme.textBlack.withOpacity(0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            if (_selectedImage != null)
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: HeracleTheme.givingliGreenDark.withOpacity(0.3),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: Image.file(
+                        _selectedImage!,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: -6,
+                    right: 2,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedImage = null),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.black87,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            if (_selectedImage == null) const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _aiFoodController,
+                focusNode: _aiFoodFocusNode,
+                onChanged: (val) {
+                  setState(() {});
+                  _onSearchChanged(val);
+                },
+                decoration: const InputDecoration(
+                  hintText: 'e.g. "Oatmeal with berries"',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 14),
+                  hintStyle: TextStyle(
+                    color: HeracleTheme.textGrey,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                  ),
+                ),
+                style: const TextStyle(
+                  color: HeracleTheme.textBlack,
+                  fontWeight: FontWeight.w600,
                   fontSize: 15,
                 ),
               ),
-              style: const TextStyle(
-                color: HeracleTheme.textBlack,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+            ),
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: hasInput
+                    ? HeracleTheme.givingliGreenDark
+                    : Colors.grey.withOpacity(0.15),
               ),
-            ),
-          ),
-          Container(
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: HeracleTheme.givingliGreenDark,
-            ),
-            child: _isAiLoading
-                ? const SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Padding(
-                      padding: EdgeInsets.all(14.0),
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
+              child: _isAiLoading
+                  ? const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Padding(
+                        padding: EdgeInsets.all(14.0),
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       ),
-                    ),
-                  )
-                : IconButton(
-                    onPressed: () async {
-                      final input = _aiFoodController.text.trim();
-                      if (input.isNotEmpty) {
+                    )
+                  : IconButton(
+                      onPressed: () async {
+                        if (!hasInput) {
+                          await _pickImage();
+                          return;
+                        }
+
                         setState(() => _isAiLoading = true);
                         try {
                           final result = await DietService.instance.analyzeFood(
-                            input,
+                            _aiFoodController.text.trim(),
+                            image: _selectedImage,
                           );
                           if (result != null) {
                             setState(() {
                               result.mealType = _selectedMealType;
                               _scannedPreviewMeals.insert(0, result);
                               _aiFoodController.clear();
+                              _selectedImage = null;
                             });
                           } else {
-                            // Show error snackbar
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -153,16 +448,20 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                             setState(() => _isAiLoading = false);
                           }
                         }
-                      }
-                    },
-                    icon: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: Colors.white,
-                      size: 20,
+                      },
+                      icon: Icon(
+                        hasInput
+                            ? Icons.auto_awesome_rounded
+                            : Icons.camera_alt_rounded,
+                        color: hasInput
+                            ? Colors.white
+                            : HeracleTheme.textBlack.withOpacity(0.6),
+                        size: 20,
+                      ),
                     ),
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -448,6 +747,24 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
   }
 
   Widget _buildTrackedMealsList() {
+    // Show skeleton while data is loading from /diet/status
+    if (_isStatusLoading) {
+      return Container(
+        margin: const EdgeInsets.only(top: 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _skeletonBox(width: 130, height: 20, radius: 8),
+            const SizedBox(height: 16),
+            for (int i = 0; i < 3; i++) ...[
+              _buildSkeletonLoggedMealCard(),
+              const SizedBox(height: 12),
+            ],
+          ],
+        ),
+      );
+    }
+
     if (_trackedMeals.isEmpty) return const SizedBox.shrink();
     return Container(
       margin: const EdgeInsets.only(top: 32),
@@ -474,88 +791,161 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
     );
   }
 
+  // Returns a color + icon pair for each meal type
+  (Color, IconData) _mealTypeStyle(String type) {
+    switch (type.toLowerCase()) {
+      case 'breakfast':
+        return (const Color(0xFFFFA040), Icons.wb_sunny_rounded);
+      case 'lunch':
+        return (const Color(0xFF4CAF82), Icons.restaurant_rounded);
+      case 'snacks':
+        return (const Color(0xFF9C74D8), Icons.local_cafe_rounded);
+      case 'dinner':
+        return (const Color(0xFF4285F4), Icons.nights_stay_rounded);
+      default:
+        return (HeracleTheme.givingliGreenDark, Icons.fastfood_rounded);
+    }
+  }
+
   Widget _buildLoggedMealCard(LoggedMeal meal, int index) {
-    // Sum macros for the whole meal
-    int totalCals = meal.data.fold(0, (sum, f) => sum + f.calories);
+    // Aggregate macros for the whole meal
+    int totalCals = meal.data.fold(0, (s, f) => s + f.calories);
+    int totalProtein = meal.data.fold(0, (s, f) => s + f.protein);
+    int totalCarbs = meal.data.fold(0, (s, f) => s + f.carbs);
+    int totalFats = meal.data.fold(0, (s, f) => s + f.fats);
+    int totalFiber = meal.data.fold(0, (s, f) => s + f.fiber);
+
+    final (mealColor, mealIcon) = _mealTypeStyle(meal.mealType);
 
     return Container(
       key: ObjectKey(meal),
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.012),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: HeracleTheme.givingliGreenDark.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Text(
-                      meal.mealType.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: HeracleTheme.givingliGreenDark,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+          // ── Header ──────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            child: Row(
+              children: [
+                // Meal-type icon badge
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: mealColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    meal.time,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: HeracleTheme.textGrey,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                '$totalCals kcal',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: HeracleTheme.textBlack,
+                  child: Icon(mealIcon, color: mealColor, size: 20),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...meal.data
-              .map(
-                (food) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                const SizedBox(width: 12),
+                // Meal type + time
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        meal.mealType,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: mealColor,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        meal.time,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: HeracleTheme.textGrey.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Calorie chip
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1D1B20),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.local_fire_department_rounded,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$totalCals kcal',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Divider ─────────────────────────────────────────────
+          Divider(
+            height: 1,
+            thickness: 1,
+            indent: 14,
+            endIndent: 14,
+            color: Colors.black.withOpacity(0.05),
+          ),
+
+          // ── Food items list ───────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: meal.data.map((food) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 7),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        margin: const EdgeInsets.only(right: 8, top: 1),
+                        decoration: BoxDecoration(
+                          color: mealColor.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                       Expanded(
                         child: Text(
                           food.name,
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: HeracleTheme.textBlack,
+                            letterSpacing: -0.2,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -563,18 +953,80 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${food.protein}P • ${food.carbs}C • ${food.fats}F',
-                        style: const TextStyle(
+                        '${food.calories} kcal',
+                        style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: HeracleTheme.textGrey,
+                          fontWeight: FontWeight.w600,
+                          color: HeracleTheme.textGrey.withOpacity(0.9),
                         ),
                       ),
                     ],
                   ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          // ── Macro summary row ────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+            child: Row(
+              children: [
+                _loggedMacroChip(
+                  'P',
+                  '${totalProtein}g',
+                  const Color(0xFFE55A6B),
                 ),
-              )
-              .toList(),
+                const SizedBox(width: 6),
+                _loggedMacroChip(
+                  'C',
+                  '${totalCarbs}g',
+                  const Color(0xFFF0A500),
+                ),
+                const SizedBox(width: 6),
+                _loggedMacroChip('F', '${totalFats}g', const Color(0xFF4285F4)),
+                const SizedBox(width: 6),
+                _loggedMacroChip(
+                  'Fi',
+                  '${totalFiber}g',
+                  const Color(0xFF4CAF82),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _loggedMacroChip(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.09),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: 0.2,
+            ),
+          ),
+          const SizedBox(width: 3),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color.withOpacity(0.85),
+            ),
+          ),
         ],
       ),
     );
@@ -752,8 +1204,8 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                                 (item) => _buildSuggestedMealCard(item),
                               ),
                             ] else if (_aiSuggestion == null) ...[
-                              // Loading state for suggested meals
-                              const Center(child: CircularProgressIndicator()),
+                              // Skeleton loading for suggested meals
+                              _buildPlanTabSkeleton(),
                             ] else ...[
                               const Text(
                                 'Trending Diet Plans',
@@ -867,21 +1319,221 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
     );
   }
 
+  // ── Skeleton Helpers ─────────────────────────────────────────────────────
+
+  /// Shimmer box used inside skeleton layouts.
+  Widget _skeletonBox({double? width, double height = 14, double radius = 8}) {
+    return _ShimmerBox(width: width, height: height, radius: radius);
+  }
+
+  /// Skeleton for the dark AI-summary card at the top of the Plan tab.
+  Widget _buildAiSummarySkeleton() {
+    return Container(
+      height: 180,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1D1B20),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tag row
+          Row(children: [_skeletonBox(width: 90, height: 26, radius: 10)]),
+          const SizedBox(height: 20),
+          // Three text lines
+          _skeletonBox(width: double.infinity, height: 16),
+          const SizedBox(height: 10),
+          _skeletonBox(width: double.infinity, height: 16),
+          const SizedBox(height: 10),
+          _skeletonBox(width: 180, height: 16),
+        ],
+      ),
+    );
+  }
+
+  /// Skeleton for the "Suggested Meals" section under the Plan tab.
+  Widget _buildPlanTabSkeleton() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section title line
+        _skeletonBox(width: 160, height: 22, radius: 10),
+        const SizedBox(height: 8),
+        _skeletonBox(width: double.infinity, height: 14),
+        const SizedBox(height: 24),
+        // 3 skeleton meal cards
+        for (int i = 0; i < 3; i++) ...[
+          _buildSkeletonMealCard(),
+          const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+
+  /// One skeleton meal card row.
+  Widget _buildSkeletonMealCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.black.withOpacity(0.04)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon placeholder
+          _skeletonBox(width: 48, height: 48, radius: 16),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _skeletonBox(width: 140, height: 16, radius: 6),
+                const SizedBox(height: 8),
+                _skeletonBox(width: 100, height: 12, radius: 6),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _skeletonBox(width: 36, height: 11, radius: 4),
+                    const SizedBox(width: 12),
+                    _skeletonBox(width: 36, height: 11, radius: 4),
+                    const SizedBox(width: 12),
+                    _skeletonBox(width: 36, height: 11, radius: 4),
+                    const SizedBox(width: 12),
+                    _skeletonBox(width: 36, height: 11, radius: 4),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Skeleton layout for the daily macro summary in the Track tab.
+  Widget _buildMacroSummarySkeleton() {
+    return Column(
+      children: [
+        // Calorie card skeleton
+        Container(
+          width: double.infinity,
+          height: 95,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _skeletonBox(width: 70, height: 30, radius: 8),
+                  const SizedBox(height: 6),
+                  _skeletonBox(width: 120, height: 12, radius: 6),
+                ],
+              ),
+              _skeletonBox(width: 56, height: 56, radius: 28),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Four macro chip skeletons
+        Row(
+          children: List.generate(
+            4,
+            (i) => [
+              Expanded(
+                child: Container(
+                  height: 90,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _skeletonBox(width: 36, height: 20, radius: 6),
+                      _skeletonBox(width: 50, height: 12, radius: 4),
+                      _skeletonBox(
+                        width: double.infinity,
+                        height: 6,
+                        radius: 3,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (i < 3) const SizedBox(width: 8),
+            ],
+          ).expand((w) => w).toList(),
+        ),
+      ],
+    );
+  }
+
+  /// Skeleton for a single logged meal card in the Track tab.
+  Widget _buildSkeletonLoggedMealCard() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.012),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row: meal-type tag + time + calories
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  _skeletonBox(width: 70, height: 20, radius: 100),
+                  const SizedBox(width: 8),
+                  _skeletonBox(width: 45, height: 12, radius: 4),
+                ],
+              ),
+              _skeletonBox(width: 60, height: 14, radius: 4),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Two food item rows
+          _skeletonBox(width: double.infinity, height: 13, radius: 4),
+          const SizedBox(height: 8),
+          _skeletonBox(width: 220, height: 13, radius: 4),
+        ],
+      ),
+    );
+  }
+
   // ── Tab 1 Widgets ──────────────────────────────────────────────────────────
 
   Widget _buildAiSummaryCard() {
     if (_aiSuggestion == null) {
-      return Container(
-        height: 180,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1D1B20),
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: const Center(
-          child: CircularProgressIndicator(color: HeracleTheme.givingliGreen),
-        ),
-      );
+      return _buildAiSummarySkeleton();
     }
 
     return Container(
@@ -915,9 +1567,11 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
               children: [
                 _buildAiInsightTag(),
                 const SizedBox(height: 20),
-                TypingTextAnimation(
-                  text: _aiSuggestion!.suggestion,
-                  parser: _parseBracedText,
+                RichText(
+                  text: TextSpan(
+                    children: _parseBracedText(_aiSuggestion!.suggestion),
+                    style: const TextStyle(fontFamily: 'Outfit'),
+                  ),
                 ),
               ],
             ),
@@ -1174,11 +1828,11 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
         spans.add(
           TextSpan(
             text: text.substring(lastMatchEnd, match.start),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.65),
               fontSize: 16,
               height: 1.5,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w300,
             ),
           ),
         );
@@ -1188,7 +1842,7 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
           text: match.group(1),
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 28,
+            fontSize: 22,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.5,
           ),
@@ -1201,11 +1855,11 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
       spans.add(
         TextSpan(
           text: text.substring(lastMatchEnd),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.65),
             fontSize: 16,
             height: 1.5,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w300,
           ),
         ),
       );
@@ -1226,7 +1880,12 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
   // ── Tab 2 Widgets (Screenshot implementation) ───────────────────────────────
 
   Widget _buildDailyMacroSummary() {
-    // If we have API data, use it; otherwise fallback to local calculation
+    // Show skeleton while data is being fetched from /diet/status
+    if (_isStatusLoading) {
+      return _buildMacroSummarySkeleton();
+    }
+
+    // If loaded but no status returned, fall back to local meal totals
     int totalCals =
         _dietStatus?.consumed.calories.toInt() ??
         _trackedMeals.fold(
@@ -1258,20 +1917,33 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
           (sum, m) => sum + m.data.fold(0, (s, f) => s + f.fiber),
         );
 
-    // Targets from API
-    int goalCals = _dietStatus?.targets.calories.toInt() ?? 2400;
-    int goalProtein = _dietStatus?.targets.protein.toInt() ?? 180;
-    int goalCarbs = _dietStatus?.targets.carbs.toInt() ?? 250;
-    int goalFats = _dietStatus?.targets.fat.toInt() ?? 70;
-    int goalFiber = _dietStatus?.targets.fiber.toInt() ?? 30;
+    // Targets only from API — no hardcoded defaults
+    final targets = _dietStatus?.targets;
+    int goalCals = targets?.calories.toInt() ?? 0;
+    int goalProtein = targets?.protein.toInt() ?? 0;
+    int goalCarbs = targets?.carbs.toInt() ?? 0;
+    int goalFats = targets?.fat.toInt() ?? 0;
+    int goalFiber = targets?.fiber.toInt() ?? 0;
 
-    String calsStatus = "$totalCals / $goalCals kcal";
+    String calsStatus = goalCals > 0
+        ? "$totalCals / $goalCals kcal"
+        : "$totalCals kcal";
 
-    double calsProgress = (totalCals / goalCals).clamp(0.0, 1.0);
-    double proteinProgress = (totalProtein / goalProtein).clamp(0.0, 1.0);
-    double carbsProgress = (totalCarbs / goalCarbs).clamp(0.0, 1.0);
-    double fatsProgress = (totalFats / goalFats).clamp(0.0, 1.0);
-    double fiberProgress = (totalFiber / goalFiber).clamp(0.0, 1.0);
+    double calsProgress = goalCals > 0
+        ? (totalCals / goalCals).clamp(0.0, 1.0)
+        : 0.0;
+    double proteinProgress = goalProtein > 0
+        ? (totalProtein / goalProtein).clamp(0.0, 1.0)
+        : 0.0;
+    double carbsProgress = goalCarbs > 0
+        ? (totalCarbs / goalCarbs).clamp(0.0, 1.0)
+        : 0.0;
+    double fatsProgress = goalFats > 0
+        ? (totalFats / goalFats).clamp(0.0, 1.0)
+        : 0.0;
+    double fiberProgress = goalFiber > 0
+        ? (totalFiber / goalFiber).clamp(0.0, 1.0)
+        : 0.0;
 
     return Column(
       children: [
@@ -1612,6 +2284,60 @@ class _TypingTextAnimationState extends State<TypingTextAnimation> {
       text: TextSpan(
         children: widget.parser(_displayedText),
         style: const TextStyle(fontFamily: 'Outfit'), // Match app theme
+      ),
+    );
+  }
+}
+
+/// A self-contained shimmer rectangle that animates between two grey shades.
+/// Used by the skeleton helpers in [_DietPlanningScreenState].
+class _ShimmerBox extends StatefulWidget {
+  final double? width;
+  final double height;
+  final double radius;
+
+  const _ShimmerBox({this.width, this.height = 14, this.radius = 8});
+
+  @override
+  State<_ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<_ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<Color?> _color;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+
+    _color = ColorTween(
+      begin: Colors.black.withOpacity(0.06),
+      end: Colors.black.withOpacity(0.13),
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _color,
+      builder: (_, __) => Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: _color.value,
+          borderRadius: BorderRadius.circular(widget.radius),
+        ),
       ),
     );
   }
