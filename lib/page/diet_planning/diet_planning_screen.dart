@@ -540,6 +540,9 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                     children: [
                       Expanded(
                         child: TextFormField(
+                          key: ValueKey(
+                            '${previewMeal.hashCode}_name_${previewMeal.name}',
+                          ),
                           initialValue: previewMeal.name,
                           style: const TextStyle(
                             fontSize: 18,
@@ -559,7 +562,44 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                           },
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
+                      // Quantity Multiplier (e.g. x 1, x 2)
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            // Simple cycle: 1 -> 2 -> 3 -> 4 -> 5 -> 1
+                            double nextQty = previewMeal.quantity + 1;
+                            if (nextQty > 5) nextQty = 1;
+                            previewMeal.updateQuantity(nextQty);
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: HeracleTheme.givingliGreenDark.withOpacity(
+                              0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: HeracleTheme.givingliGreenDark.withOpacity(
+                                0.2,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'x ${previewMeal.quantity.toInt()}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: HeracleTheme.givingliGreenDark,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       // Calories in the same row
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -571,11 +611,17 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
+                          key: ValueKey(
+                            '${previewMeal.hashCode}_cal_${previewMeal.calories}',
+                          ),
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             SizedBox(
                               width: 35,
                               child: TextFormField(
+                                key: ValueKey(
+                                  '${previewMeal.hashCode}_cal_field_${previewMeal.calories}',
+                                ),
                                 initialValue: previewMeal.calories.toString(),
                                 keyboardType: TextInputType.number,
                                 style: const TextStyle(
@@ -591,9 +637,13 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                                 onChanged: (val) {
                                   int? parsed = int.tryParse(val);
                                   if (parsed != null) {
-                                    setState(
-                                      () => previewMeal.calories = parsed,
-                                    );
+                                    setState(() {
+                                      previewMeal.calories = parsed;
+                                      // If user edits, we update the base value relative to current quantity
+                                      previewMeal.baseCalories =
+                                          (parsed / previewMeal.quantity)
+                                              .round();
+                                    });
                                   }
                                 },
                               ),
@@ -638,22 +688,42 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                       _buildEditableMacroStat(
                         'Carbs (g)',
                         previewMeal.carbs,
-                        (val) => setState(() => previewMeal.carbs = val),
+                        (val) => setState(() {
+                          previewMeal.carbs = val;
+                          previewMeal.baseCarbs = (val / previewMeal.quantity)
+                              .round();
+                        }),
+                        key: ValueKey('${previewMeal.hashCode}_carbs'),
                       ),
                       _buildEditableMacroStat(
                         'Protein (g)',
                         previewMeal.protein,
-                        (val) => setState(() => previewMeal.protein = val),
+                        (val) => setState(() {
+                          previewMeal.protein = val;
+                          previewMeal.baseProtein = (val / previewMeal.quantity)
+                              .round();
+                        }),
+                        key: ValueKey('${previewMeal.hashCode}_protein'),
                       ),
                       _buildEditableMacroStat(
                         'Fats (g)',
                         previewMeal.fats,
-                        (val) => setState(() => previewMeal.fats = val),
+                        (val) => setState(() {
+                          previewMeal.fats = val;
+                          previewMeal.baseFats = (val / previewMeal.quantity)
+                              .round();
+                        }),
+                        key: ValueKey('${previewMeal.hashCode}_fats'),
                       ),
                       _buildEditableMacroStat(
                         'Fiber (g)',
                         previewMeal.fiber,
-                        (val) => setState(() => previewMeal.fiber = val),
+                        (val) => setState(() {
+                          previewMeal.fiber = val;
+                          previewMeal.baseFiber = (val / previewMeal.quantity)
+                              .round();
+                        }),
+                        key: ValueKey('${previewMeal.hashCode}_fiber'),
                       ),
                     ],
                   ),
@@ -767,22 +837,6 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
     );
   }
 
-  // Returns a color + icon pair for each meal type
-  (Color, IconData) _mealTypeStyle(String type) {
-    switch (type.toLowerCase()) {
-      case 'breakfast':
-        return (const Color(0xFFFFA040), Icons.wb_sunny_rounded);
-      case 'lunch':
-        return (const Color(0xFF4CAF82), Icons.restaurant_rounded);
-      case 'snacks':
-        return (const Color(0xFF9C74D8), Icons.local_cafe_rounded);
-      case 'dinner':
-        return (const Color(0xFF4285F4), Icons.nights_stay_rounded);
-      default:
-        return (HeracleTheme.givingliGreenDark, Icons.fastfood_rounded);
-    }
-  }
-
   Widget _buildLoggedMealCard(LoggedMeal meal, int index) {
     // Aggregate macros for the whole meal
     int totalCals = meal.data.fold(0, (s, f) => s + f.calories);
@@ -791,7 +845,7 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
     int totalFats = meal.data.fold(0, (s, f) => s + f.fats);
     int totalFiber = meal.data.fold(0, (s, f) => s + f.fiber);
 
-    final (mealColor, mealIcon) = _mealTypeStyle(meal.mealType);
+    // Removed mealColor/mealIcon as B&W theme uses monochromatic icons
 
     return Container(
       key: ObjectKey(meal),
@@ -799,11 +853,12 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.black.withOpacity(0.06), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -815,15 +870,19 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
             child: Row(
               children: [
-                // Meal-type icon badge
+                // Meal-type icon badge (B&W)
                 Container(
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: mealColor.withOpacity(0.12),
+                    color: Colors.black.withOpacity(0.04),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(mealIcon, color: mealColor, size: 20),
+                  child: const Icon(
+                    Icons.restaurant_rounded,
+                    color: Colors.black,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 // Meal type + time
@@ -833,10 +892,10 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                     children: [
                       Text(
                         meal.mealType,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          color: mealColor,
+                          color: HeracleTheme.textBlack,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -852,14 +911,14 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                     ],
                   ),
                 ),
-                // Calorie chip
+                // Calorie chip (Solid Black)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1D1B20),
+                    color: Colors.black,
                     borderRadius: BorderRadius.circular(100),
                   ),
                   child: Row(
@@ -892,7 +951,7 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
             thickness: 1,
             indent: 14,
             endIndent: 14,
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.04),
           ),
 
           // ── Food items list ───────────────────────────────────────
@@ -906,25 +965,39 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                   child: Row(
                     children: [
                       Container(
-                        width: 5,
-                        height: 5,
-                        margin: const EdgeInsets.only(right: 8, top: 1),
+                        width: 4,
+                        height: 4,
+                        margin: const EdgeInsets.only(right: 10, top: 1),
                         decoration: BoxDecoration(
-                          color: mealColor.withOpacity(0.6),
-                          shape: BoxShape.circle,
+                          color: Colors.black.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(1),
                         ),
                       ),
                       Expanded(
-                        child: Text(
-                          food.name,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: HeracleTheme.textBlack,
-                            letterSpacing: -0.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              food.name,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: HeracleTheme.textBlack,
+                                letterSpacing: -0.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${food.protein}P • ${food.carbs}C • ${food.fats}F • ${food.fiber}Fi',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: HeracleTheme.textGrey.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -932,8 +1005,8 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
                         '${food.calories} kcal',
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: HeracleTheme.textGrey.withOpacity(0.9),
+                          fontWeight: FontWeight.w700,
+                          color: HeracleTheme.textBlack.withOpacity(0.8),
                         ),
                       ),
                     ],
@@ -948,25 +1021,13 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
             child: Row(
               children: [
-                _loggedMacroChip(
-                  'P',
-                  '${totalProtein}g',
-                  const Color(0xFFE55A6B),
-                ),
+                _loggedMacroChip('P', '${totalProtein}g'),
                 const SizedBox(width: 6),
-                _loggedMacroChip(
-                  'C',
-                  '${totalCarbs}g',
-                  const Color(0xFFF0A500),
-                ),
+                _loggedMacroChip('C', '${totalCarbs}g'),
                 const SizedBox(width: 6),
-                _loggedMacroChip('F', '${totalFats}g', const Color(0xFF4285F4)),
+                _loggedMacroChip('F', '${totalFats}g'),
                 const SizedBox(width: 6),
-                _loggedMacroChip(
-                  'Fi',
-                  '${totalFiber}g',
-                  const Color(0xFF4CAF82),
-                ),
+                _loggedMacroChip('Fi', '${totalFiber}g'),
               ],
             ),
           ),
@@ -975,32 +1036,33 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
     );
   }
 
-  Widget _loggedMacroChip(String label, String value, Color color) {
+  Widget _loggedMacroChip(String label, String value) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.09),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.black.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 10,
-              fontWeight: FontWeight.w800,
-              color: color,
-              letterSpacing: 0.2,
+              fontWeight: FontWeight.w900,
+              color: HeracleTheme.textBlack,
+              letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(width: 3),
+          const SizedBox(width: 5),
           Text(
             value,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: color.withOpacity(0.85),
+              color: HeracleTheme.textBlack.withOpacity(0.7),
             ),
           ),
         ],
@@ -1011,9 +1073,11 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
   Widget _buildEditableMacroStat(
     String label,
     int value,
-    Function(int) onChanged,
-  ) {
+    Function(int) onChanged, {
+    Key? key,
+  }) {
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -1028,6 +1092,9 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
         SizedBox(
           width: 55,
           child: TextFormField(
+            key: key != null
+                ? ValueKey('${key.toString()}_field_$value')
+                : null,
             initialValue: value.toString(),
             keyboardType: TextInputType.number,
             style: const TextStyle(
@@ -1465,41 +1532,48 @@ class _DietPlanningScreenState extends State<DietPlanningScreen>
   /// Skeleton for a single logged meal card in the Track tab.
   Widget _buildSkeletonLoggedMealCard() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 0),
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.012),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.black.withOpacity(0.06), width: 1),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row: meal-type tag + time + calories
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  _skeletonBox(width: 70, height: 20, radius: 100),
-                  const SizedBox(width: 8),
-                  _skeletonBox(width: 45, height: 12, radius: 4),
-                ],
+              _skeletonBox(width: 42, height: 42, radius: 14),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _skeletonBox(width: 100, height: 16, radius: 4),
+                    const SizedBox(height: 4),
+                    _skeletonBox(width: 60, height: 12, radius: 4),
+                  ],
+                ),
               ),
-              _skeletonBox(width: 60, height: 14, radius: 4),
+              _skeletonBox(width: 80, height: 28, radius: 100),
             ],
           ),
+          const SizedBox(height: 14),
+          Divider(height: 1, color: Colors.black.withOpacity(0.04)),
           const SizedBox(height: 12),
-          // Two food item rows
           _skeletonBox(width: double.infinity, height: 13, radius: 4),
           const SizedBox(height: 8),
           _skeletonBox(width: 220, height: 13, radius: 4),
+          const SizedBox(height: 14),
+          Row(
+            children: List.generate(
+              4,
+              (i) => Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: _skeletonBox(width: 45, height: 26, radius: 10),
+              ),
+            ),
+          ),
         ],
       ),
     );
